@@ -1,4 +1,4 @@
-const CACHE_NAME = 'estoque-wms-v1';
+const CACHE_NAME = 'estoque-wms-v2';
 const CORE_ASSETS = [
   '/index.html',
   '/admin.html',
@@ -10,7 +10,11 @@ const CORE_ASSETS = [
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(CORE_ASSETS)).then(() => self.skipWaiting())
+    caches.open(CACHE_NAME).then((cache) =>
+      // Se um único asset falhar (404/rede), não deixa o install inteiro
+      // falhar — cacheia o que der certo e segue em frente.
+      Promise.allSettled(CORE_ASSETS.map((url) => cache.add(url)))
+    ).then(() => self.skipWaiting())
   );
 });
 
@@ -26,20 +30,32 @@ self.addEventListener('activate', (event) => {
 // atuais (produtos, sessões abertas, lançamentos). Cachear isso arriscaria
 // duplicar/perder lançamentos com dados desatualizados offline.
 self.addEventListener('fetch', (event) => {
-  const url = new URL(event.request.url);
-  if (event.request.method !== 'GET') return;
+  const req = event.request;
+  const url = new URL(req.url);
+  if (req.method !== 'GET') return;
+  if (url.origin !== self.location.origin) return;
   if (url.pathname.startsWith('/api/')) return;
 
-  event.respondWith(
-    caches.match(event.request).then((cached) => {
-      const network = fetch(event.request).then((res) => {
-        if (res.ok) {
-          const copy = res.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, copy));
-        }
-        return res;
-      }).catch(() => cached);
-      return cached || network;
-    })
-  );
+  event.respondWith(networkFirstWithCacheFallback(req));
 });
+
+// IMPORTANTE: essa função sempre resolve para uma Response de verdade
+// (nunca undefined) — devolver undefined pro respondWith() é o que causa
+// o erro ERR_FAILED no Chrome ao abrir o app instalado.
+async function networkFirstWithCacheFallback(req) {
+  const cache = await caches.open(CACHE_NAME);
+  try {
+    const res = await fetch(req);
+    if (res && res.ok) {
+      cache.put(req, res.clone()).catch(() => {});
+    }
+    return res;
+  } catch (err) {
+    const cached = await cache.match(req);
+    if (cached) return cached;
+    return new Response('Sem conexão e sem versão em cache desta página.', {
+      status: 503,
+      headers: { 'Content-Type': 'text/plain; charset=utf-8' }
+    });
+  }
+}
