@@ -212,10 +212,7 @@ function renderSessions(){
 }
 
 function renderCounting(){
-  const filtered = state.search.trim() === '' ? [] : state.products.filter(p => {
-    const q = state.search.toLowerCase();
-    return p.sku.toLowerCase().includes(q) || p.descricao.toLowerCase().includes(q);
-  }).slice(0, 30);
+  const filtered = state.search.trim() === '' ? [] : searchProducts(state.search, state.products);
 
   let selBlock = '';
   if(state.selectedProduct){
@@ -297,6 +294,50 @@ function renderCounting(){
     ${logBlock}
     ${modal}
   `;
+}
+
+// ---- Busca dinâmica de produtos ----
+// Remove acentos, ignora maiúsc/minúsc e caracteres de pontuação/separadores,
+// pra digitação como "file frango", "filé-frango" ou "FILE DE FRANGO" acharem o mesmo produto.
+function normalizeStr(s){
+  return String(s)
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '') // remove acentos
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim();
+}
+
+function searchProducts(query, products){
+  const qNorm = normalizeStr(query);
+  if(!qNorm) return [];
+  const tokens = qNorm.split(' ').filter(Boolean);
+
+  const scored = [];
+  for(const p of products){
+    const skuNorm = normalizeStr(p.sku);
+    const descNorm = normalizeStr(p.descricao);
+    const haystack = skuNorm + ' ' + descNorm;
+
+    // cada palavra digitada precisa aparecer em algum lugar (SKU ou descrição),
+    // em qualquer ordem — permite digitar as palavras do produto fora de ordem.
+    let allTokensMatch = true;
+    let score = 0;
+    for(const t of tokens){
+      const idx = haystack.indexOf(t);
+      if(idx === -1){ allTokensMatch = false; break; }
+      score += idx; // match mais cedo no texto = mais relevante
+    }
+    if(!allTokensMatch) continue;
+
+    // bônus de relevância: match exato ou no início ganham prioridade
+    if(skuNorm === qNorm || descNorm === qNorm) score -= 10000;
+    else if(skuNorm.startsWith(qNorm) || descNorm.startsWith(qNorm)) score -= 5000;
+
+    scored.push({ p, score });
+  }
+
+  scored.sort((a, b) => a.score - b.score);
+  return scored.slice(0, 40).map(s => s.p);
 }
 
 function escapeHtml(s){
