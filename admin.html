@@ -69,6 +69,30 @@
   @keyframes spin{ to{ transform:rotate(360deg); } }
   a.back{ display:inline-block; margin-top:20px; color:var(--ink-soft); font-size:0.85rem; text-decoration:none; }
   a.back:hover{ color:var(--brand-dark); }
+
+  .danger-zone{
+    background:var(--surface); border:1px solid var(--danger); border-radius:6px;
+    padding:20px; margin-top:24px; box-shadow:0 1px 3px rgba(29,45,62,0.06);
+  }
+  .danger-zone .eyebrow{ color:var(--danger); }
+  .danger-zone h2{ font-size:1.05rem; margin:0 0 6px; color:var(--shell); }
+  .danger-zone .sub{ margin-bottom:16px; }
+  .btn-danger{ background:var(--danger); }
+  .btn-danger:hover{ background:#970000; }
+
+  .modal-backdrop{
+    position:fixed; inset:0; background:rgba(15,25,35,0.55);
+    display:flex; align-items:center; justify-content:center; padding:20px; z-index:50;
+  }
+  .modal{ background:var(--surface); border-radius:8px; padding:22px; max-width:400px; width:100%; box-shadow:0 12px 40px rgba(0,0,0,0.25); }
+  .modal h3{ margin-top:0; color:var(--shell); }
+  .modal p{ color:var(--ink-soft); font-size:0.9rem; }
+  .modal input{
+    width:100%; padding:10px 12px; border:1px solid var(--line); border-radius:5px;
+    font-size:1rem; margin-top:10px;
+  }
+  .modal-actions{ display:flex; gap:10px; margin-top:18px; }
+  .modal-actions button{ flex:1; }
 </style>
 </head>
 <body>
@@ -91,8 +115,28 @@
     <button id="btn" disabled>Carregar produtos</button>
     <div class="status" id="status"></div>
   </div>
+  <div class="danger-zone">
+    <div class="eyebrow">Zona de risco</div>
+    <h2>Apagar todo o histórico de contagens</h2>
+    <div class="sub">Remove permanentemente todas as sessões e todos os lançamentos já feitos (aberta ou finalizada). A lista de produtos não é afetada. Essa ação não pode ser desfeita.</div>
+    <button class="btn-danger" id="btn-reset">Apagar todo o histórico</button>
+  </div>
+
   <a class="back" href="index.html">&larr; Voltar para a contagem</a>
 </div>
+
+<div class="modal-backdrop" id="reset-modal-backdrop" style="display:none;">
+  <div class="modal">
+    <h3>Confirmar exclusão</h3>
+    <p>Isso vai apagar <strong>todas</strong> as sessões e lançamentos de contagem, de forma permanente. Digite <strong>APAGAR</strong> abaixo para confirmar.</p>
+    <input type="text" id="reset-confirm-input" placeholder="Digite APAGAR" autocomplete="off">
+    <div class="modal-actions">
+      <button id="reset-cancel-btn" style="background:#fff; color:var(--ink); border:1px solid var(--line);">Cancelar</button>
+      <button class="btn-danger" id="reset-confirm-btn" disabled>Apagar tudo</button>
+    </div>
+  </div>
+</div>
+
 <script>
 let PRODUCTS = [];
 
@@ -135,6 +179,45 @@ document.getElementById('btn').addEventListener('click', async () => {
 });
 
 init();
+
+// ---- Zona de risco: apagar histórico de contagens ----
+const resetModalBackdrop = document.getElementById('reset-modal-backdrop');
+const resetConfirmInput = document.getElementById('reset-confirm-input');
+const resetConfirmBtn = document.getElementById('reset-confirm-btn');
+
+document.getElementById('btn-reset').addEventListener('click', () => {
+  resetConfirmInput.value = '';
+  resetConfirmBtn.disabled = true;
+  resetModalBackdrop.style.display = 'flex';
+  setTimeout(() => resetConfirmInput.focus(), 0);
+});
+
+document.getElementById('reset-cancel-btn').addEventListener('click', () => {
+  resetModalBackdrop.style.display = 'none';
+});
+
+resetConfirmInput.addEventListener('input', () => {
+  resetConfirmBtn.disabled = resetConfirmInput.value.trim() !== 'APAGAR';
+});
+
+resetConfirmBtn.addEventListener('click', async () => {
+  resetConfirmBtn.disabled = true;
+  resetConfirmBtn.innerHTML = '<span class="spinner"></span>Apagando...';
+  const statusEl = document.getElementById('status');
+  try {
+    const res = await fetch('/api/reset-counts', { method: 'POST' });
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+    resetModalBackdrop.style.display = 'none';
+    statusEl.className = 'status ok';
+    statusEl.textContent = 'Histórico de contagens apagado com sucesso.';
+  } catch (err) {
+    resetModalBackdrop.style.display = 'none';
+    statusEl.className = 'status err';
+    statusEl.textContent = 'Erro ao apagar histórico: ' + err.message;
+  }
+  resetConfirmBtn.textContent = 'Apagar tudo';
+});
 </script>
 </body>
 </html>
