@@ -1,6 +1,6 @@
 # Contagem de Estoque
 
-App simples para contagem física de estoque por posição, com backend numa planilha do Google Sheets (via Apps Script). Feito para ser hospedado no GitHub Pages.
+App simples para contagem física de estoque por posição, com backend numa planilha do Google Sheets (via Apps Script). Feito para ser hospedado na Vercel.
 
 ## Estrutura do projeto
 
@@ -47,15 +47,16 @@ Sempre que editar o `Code.gs`, repita: **Implantar > Gerenciar implantações > 
    ]
    ```
 
-## Publicar no GitHub Pages
+## Publicar na Vercel
 
-1. Crie um repositório novo no GitHub e suba todos os arquivos deste projeto (pode ser via upload direto pela interface do GitHub, ou `git push`).
-2. No repositório, vá em **Settings > Pages**.
-3. Em "Source", selecione a branch `main` e a pasta `/ (root)`. Salve.
-4. Em alguns minutos, o GitHub mostra a URL pública, algo como:
-   `https://SEU-USUARIO.github.io/NOME-DO-REPO/`
+1. Suba todos os arquivos deste projeto para um repositório no GitHub (ex.: `git push`).
+2. Em [vercel.com](https://vercel.com), clique em **Add New > Project** e importe esse repositório.
+3. Não é preciso configurar nada — é um site estático, então deixe **Framework Preset** como "Other" e clique em **Deploy**.
+4. Em alguns segundos a Vercel mostra a URL pública, algo como:
+   `https://NOME-DO-PROJETO.vercel.app`
 5. Acesse essa URL — isso abre `index.html` automaticamente, já servido via `https://`, sem os bloqueios de CORS que acontecem ao abrir arquivos localmente (`file://`).
-6. Para carregar (ou recarregar) a lista de produtos, acesse `.../admin.html`.
+6. Para carregar (ou recarregar) a lista de produtos, acesse `.../admin.html` (ou `.../admin`, com `cleanUrls`).
+7. Qualquer novo `git push` na branch conectada gera um novo deploy automaticamente.
 
 ## Uso do dia a dia
 
