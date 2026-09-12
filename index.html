@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Contagem de Estoque</title>
 <link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#1d2d3e">
+<meta name="theme-color" content="#05070a">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -13,21 +13,25 @@
 <link rel="apple-touch-icon" href="icons/icon-192.png">
 <style>
   :root{
-    --shell: #1d2d3e;
-    --shell-dark: #16232f;
-    --brand: #0a6ed1;
-    --brand-dark: #085caf;
-    --bg: #f5f6f7;
-    --surface: #ffffff;
-    --ink: #1d2d3e;
-    --ink-soft: #6a6d78;
-    --line: #d9dde1;
-    --ok: #107e3e;
-    --ok-bg: #e6f4ea;
-    --warning: #df6e0c;
-    --warning-bg: #fdf1e2;
-    --danger: #bb0000;
-    --danger-bg: #fbe9e9;
+    /* Tema "coletor de dados": tela escura, alto contraste, leitura tipo
+       terminal/LED — a mesma linguagem visual dos leitores de código de
+       barras industriais (Zebra/Honeywell) em vez de um formulário web comum. */
+    --shell: #05070a;
+    --shell-dark: #000000;
+    --brand: #2f81f7;
+    --brand-dark: #1f63c4;
+    --bg: #0b0f14;
+    --surface: #131a22;
+    --surface-raised: #1a2330;
+    --ink: #e8edf2;
+    --ink-soft: #8a97a3;
+    --line: #26313c;
+    --ok: #3fb950;
+    --ok-bg: rgba(63,185,80,0.14);
+    --warning: #f0b429;
+    --warning-bg: rgba(240,180,41,0.14);
+    --danger: #f85149;
+    --danger-bg: rgba(248,81,73,0.14);
     font-size: 16px;
   }
   *{ box-sizing:border-box; }
@@ -76,17 +80,18 @@
     background: var(--surface); border:1px solid var(--line); border-radius:6px;
     padding:14px; box-shadow:0 1px 3px rgba(29,45,62,0.06); border-top:3px solid var(--brand);
   }
-  .stat-card .num{ font-size:1.5rem; font-weight:800; color:var(--shell); }
+  .stat-card .num{ font-size:1.5rem; font-weight:800; color:var(--brand); font-family:'Consolas','Courier New', monospace; }
   .stat-card .lbl{ font-size:0.72rem; color:var(--ink-soft); text-transform:uppercase; letter-spacing:0.04em; margin-top:2px; }
 
   .hero-icon{
-    width:56px; height:56px; border-radius:50%; background:#eaf3fd; color:var(--brand);
+    width:56px; height:56px; border-radius:50%; background:rgba(47,129,247,0.14); color:var(--brand);
     display:flex; align-items:center; justify-content:center; font-size:1.6rem; margin:0 auto 14px;
+    border:1px solid var(--brand);
   }
 
   h1{
     font-size:1.5rem; margin: 0 0 4px; font-weight:700;
-    letter-spacing: -0.01em; color:var(--shell);
+    letter-spacing: -0.01em; color:var(--ink);
   }
   .sub{ color:var(--ink-soft); font-size:0.9rem; margin-bottom:18px; }
 
@@ -120,8 +125,8 @@
   button:active{ transform: translateY(1px); }
   .btn-primary{ background: var(--brand); color:#fff; }
   .btn-primary:hover{ background: var(--brand-dark); }
-  .btn-secondary{ background:var(--surface); color:var(--ink); border:1px solid var(--line); }
-  .btn-secondary:hover{ background:#eef0f2; }
+  .btn-secondary{ background:var(--surface-raised); color:var(--ink); border:1px solid var(--line); }
+  .btn-secondary:hover{ background:#233040; }
   .btn-danger{ background: var(--danger); color:#fff; }
   .btn-danger:hover{ background:#970000; }
   .btn-block{ width:100%; }
@@ -136,20 +141,56 @@
   .field{ margin-bottom:14px; }
 
   .search-results{ max-height:260px; overflow-y:auto; border:1px solid var(--line); border-radius:5px; background:var(--surface); }
-  .prod-item{ padding:11px 12px; border-bottom:1px solid #eef0f2; cursor:pointer; display:flex; justify-content:space-between; gap:10px; }
+  .prod-item{ padding:11px 12px; border-bottom:1px solid var(--line); cursor:pointer; display:flex; justify-content:space-between; gap:10px; }
   .prod-item:last-child{ border-bottom:none; }
-  .prod-item:hover{ background: #f0f6fd; }
-  .prod-sku{ font-family:'Consolas', 'Courier New', monospace; font-weight:700; font-size:0.82rem; color:var(--brand-dark); white-space:nowrap; }
+  .prod-item:hover{ background: var(--surface-raised); }
+  .prod-sku{ font-family:'Consolas', 'Courier New', monospace; font-weight:700; font-size:0.82rem; color:var(--ok); white-space:nowrap; }
   .prod-desc{ font-size:0.88rem; color:var(--ink-soft); text-align:right; }
 
   .selected-product{
     display:flex; justify-content:space-between; align-items:center;
-    background: #f0f6fd; border:1px solid var(--brand); border-radius:5px;
+    background: var(--surface-raised); border:1px solid var(--brand); border-radius:5px;
     padding: 12px 14px; margin-bottom:14px;
   }
   .selected-product .name{ font-weight:700; }
   .selected-product .sku{ font-family:'Consolas', 'Courier New', monospace; font-size:0.8rem; color:var(--ink-soft); }
   .clear-sel{ background:none; border:none; color:var(--ink-soft); font-size:1.2rem; padding:0 4px; }
+
+  /* Leitor tipo LCD/terminal para a quantidade — a peça central do
+     "coletor de dados": dígitos grandes, verdes, em monoespaçada. */
+  .qty-readout{
+    background:#04140a; border:1px solid var(--ok); border-radius:6px;
+    padding:14px 16px; margin-bottom:0;
+  }
+  .qty-readout input{
+    font-family:'Consolas','Courier New', monospace; font-size:2.1rem; font-weight:700;
+    color:var(--ok); background:transparent; border:none; width:100%; padding:0;
+    text-shadow: 0 0 10px rgba(63,185,80,0.5); letter-spacing:0.02em;
+  }
+  .qty-readout input:focus{ outline:none; }
+  .qty-readout .unit{ color:var(--ink-soft); font-size:0.85rem; text-transform:uppercase; letter-spacing:0.05em; font-weight:600; }
+
+  .scan-btn{
+    display:flex; align-items:center; justify-content:center; gap:8px;
+    background: var(--surface-raised); color:var(--brand); border:1px solid var(--brand);
+    flex-shrink:0; width:46px; font-size:1.2rem; padding:0;
+  }
+  .scan-row{ display:flex; gap:8px; }
+  .scan-row input{ flex:1; min-width:0; }
+
+  .scanner-modal .modal{ max-width:480px; padding:0; overflow:hidden; background:#000; }
+  .scanner-video-wrap{ position:relative; width:100%; aspect-ratio: 3/4; background:#000; }
+  .scanner-video-wrap video{ width:100%; height:100%; object-fit:cover; display:block; }
+  .scanner-reticle{
+    position:absolute; left:10%; right:10%; top:38%; bottom:38%;
+    border:2px solid var(--ok); border-radius:6px; box-shadow:0 0 0 999px rgba(0,0,0,0.35);
+  }
+  .scanner-hint{
+    position:absolute; left:0; right:0; bottom:12px; text-align:center;
+    color:#fff; font-size:0.8rem; text-shadow:0 1px 3px rgba(0,0,0,0.8);
+  }
+  .scanner-footer{ padding:14px 16px; background:var(--surface); }
+  .scanner-error{ padding:20px 16px; color:var(--ink); font-size:0.9rem; }
 
   .header-bar{
     display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; gap:10px;
@@ -169,9 +210,10 @@
 
   .toast{
     position:fixed; left:50%; bottom:24px; transform:translateX(-50%);
-    background:var(--shell); color:#fff; padding:12px 20px; border-radius:5px;
+    background:var(--surface-raised); color:var(--ink); border:1px solid var(--line);
+    padding:12px 20px; border-radius:5px;
     font-size:0.9rem; opacity:0; pointer-events:none; transition:opacity 0.2s ease, transform 0.2s ease;
-    max-width:90vw; text-align:center; box-shadow:0 4px 14px rgba(0,0,0,0.25);
+    max-width:90vw; text-align:center; box-shadow:0 4px 14px rgba(0,0,0,0.4);
   }
   .toast.show{ opacity:1; transform:translateX(-50%) translateY(-6px); }
   .toast.error{ background: var(--danger); }
@@ -189,7 +231,7 @@
     display:flex; align-items:center; justify-content:center; padding:20px; z-index:50;
   }
   .modal{ background:var(--surface); border-radius:8px; padding:22px; max-width:380px; width:100%; box-shadow:0 12px 40px rgba(0,0,0,0.25); }
-  .modal h3{ margin-top:0; color:var(--shell); }
+  .modal h3{ margin-top:0; color:var(--ink); }
   .modal-actions{ display:flex; gap:10px; margin-top:18px; }
   .modal-actions button{ flex:1; }
 
@@ -244,7 +286,7 @@ function render(){
   shell.classList.toggle('top-align', state.view === 'counting');
 
   if(state.view === 'loading'){
-    c.innerHTML = `<div class="empty"><span class="spinner" style="border-color:rgba(0,0,0,0.15); border-top-color:var(--ink);"></span><br><br>Carregando...</div>`;
+    c.innerHTML = `<div class="empty"><span class="spinner" style="border-color:rgba(255,255,255,0.15); border-top-color:var(--brand);"></span><br><br>Carregando...</div>`;
     return;
   }
   if(state.view === 'sessions'){
@@ -316,7 +358,10 @@ function renderCounting(){
       </div>
       <div class="field">
         <label>Quantidade (kg)</label>
-        <input type="number" inputmode="decimal" step="any" min="0" id="qty-input" placeholder="0.0" value="${state.qty}">
+        <div class="qty-readout">
+          <input type="number" inputmode="decimal" step="any" min="0" id="qty-input" placeholder="0.0" value="${state.qty}">
+          <div class="unit">kg</div>
+        </div>
       </div>
       <button class="btn-primary btn-block" id="lancar-btn" ${state.busy ? 'disabled' : ''}>
         ${state.busy ? '<span class="spinner"></span>' : 'Lançar quantidade'}
@@ -326,7 +371,10 @@ function renderCounting(){
     selBlock = `
       <div class="field">
         <label>Buscar produto (SKU ou descrição)</label>
-        <input type="text" id="search-input" placeholder="Ex: 4521 ou filé de peito" value="${escapeHtml(state.search)}" autocomplete="off">
+        <div class="scan-row">
+          <input type="text" id="search-input" placeholder="Ex: 4521 ou filé de peito" value="${escapeHtml(state.search)}" autocomplete="off">
+          <button type="button" class="scan-btn" id="scan-btn" title="Escanear código de barras">📷</button>
+        </div>
       </div>
       <div class="search-results">
         ${ state.search.trim() === '' ? `<div class="empty">Digite para buscar um produto.</div>`
@@ -554,6 +602,9 @@ function attachCountingEvents(){
     });
   }
 
+  const scanBtn = document.getElementById('scan-btn');
+  if(scanBtn) scanBtn.addEventListener('click', openScanner);
+
   const qtyInput = document.getElementById('qty-input');
   if(qtyInput){
     qtyInput.addEventListener('input', (e) => { state.qty = e.target.value; });
@@ -586,6 +637,96 @@ function attachCountingEvents(){
     state.confirmFinish = false;
     render();
   });
+}
+
+// ---- Leitor de código de barras pela câmera ----
+async function openScanner(){
+  const backdrop = document.createElement('div');
+  backdrop.className = 'modal-backdrop scanner-modal';
+  backdrop.innerHTML = `
+    <div class="modal">
+      <div id="scanner-body"></div>
+    </div>
+  `;
+  document.body.appendChild(backdrop);
+  const body = backdrop.querySelector('#scanner-body');
+
+  let stopped = false;
+  function close(stream){
+    stopped = true;
+    if(stream) stream.getTracks().forEach(t => t.stop());
+    backdrop.remove();
+  }
+  backdrop.addEventListener('click', (e) => { if(e.target === backdrop) close(); });
+
+  if(!('BarcodeDetector' in window)){
+    body.innerHTML = `
+      <div class="scanner-error">
+        <strong>Leitor de código de barras não é suportado neste navegador.</strong><br><br>
+        Use a busca por texto normalmente (SKU ou descrição).
+      </div>
+      <div class="scanner-footer"><button class="btn-secondary btn-block" id="scanner-close">Fechar</button></div>
+    `;
+    body.querySelector('#scanner-close').addEventListener('click', () => close());
+    return;
+  }
+
+  let stream;
+  try{
+    stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+  } catch(err){
+    body.innerHTML = `
+      <div class="scanner-error">
+        <strong>Não foi possível acessar a câmera.</strong><br><br>
+        ${escapeHtml(err.message)}<br><br>
+        Verifique se a permissão de câmera está liberada para o site.
+      </div>
+      <div class="scanner-footer"><button class="btn-secondary btn-block" id="scanner-close">Fechar</button></div>
+    `;
+    body.querySelector('#scanner-close').addEventListener('click', () => close());
+    return;
+  }
+
+  body.innerHTML = `
+    <div class="scanner-video-wrap">
+      <video id="scanner-video" autoplay playsinline muted></video>
+      <div class="scanner-reticle"></div>
+      <div class="scanner-hint">Aponte a câmera para o código de barras</div>
+    </div>
+    <div class="scanner-footer"><button class="btn-secondary btn-block" id="scanner-close">Cancelar</button></div>
+  `;
+  const video = body.querySelector('#scanner-video');
+  video.srcObject = stream;
+  body.querySelector('#scanner-close').addEventListener('click', () => close(stream));
+
+  const detector = new BarcodeDetector({
+    formats: ['ean_13', 'ean_8', 'upc_a', 'upc_e', 'code_128', 'code_39', 'itf', 'codabar']
+  });
+
+  async function loop(){
+    if(stopped) return;
+    try{
+      const codes = await detector.detect(video);
+      if(codes.length > 0){
+        const value = codes[0].rawValue;
+        close(stream);
+        state.search = value;
+        render();
+        const matches = searchProducts(value, state.products);
+        if(matches.length === 1){
+          state.selectedProduct = matches[0];
+          state.qty = '';
+          render();
+          setTimeout(() => { const q = document.getElementById('qty-input'); if(q) q.focus(); }, 0);
+        } else {
+          showToast(matches.length === 0 ? 'Nenhum produto encontrado para esse código.' : 'Vários produtos encontrados — selecione na lista.', matches.length === 0);
+        }
+        return;
+      }
+    } catch(err){ /* frame sem código — ignora e tenta o próximo */ }
+    requestAnimationFrame(loop);
+  }
+  requestAnimationFrame(loop);
 }
 
 async function doLancar(){
