@@ -5,29 +5,86 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Carregar Produtos - Admin</title>
 <style>
-  :root{ --concrete:#d8d5cd; --ink:#1f2320; --safety:#f2b300; --safety-deep:#c98e00; --ok:#2f6f4e; --danger:#a83232; --line:#a7a297; --panel:#eeece6; }
-  *{box-sizing:border-box;}
-  body{ margin:0; background:var(--concrete); color:var(--ink); font-family:'Segoe UI',Roboto,-apple-system,sans-serif; }
+  :root{
+    --shell: #1d2d3e;
+    --shell-dark: #16232f;
+    --brand: #0a6ed1;
+    --brand-dark: #085caf;
+    --bg: #f5f6f7;
+    --surface: #ffffff;
+    --ink: #1d2d3e;
+    --ink-soft: #6a6d78;
+    --line: #d9dde1;
+    --ok: #107e3e;
+    --ok-bg: #e6f4ea;
+    --danger: #bb0000;
+    --danger-bg: #fbe9e9;
+  }
+  *{ box-sizing:border-box; }
+  html,body{ margin:0; padding:0; }
+  body{ background:var(--bg); color:var(--ink); font-family:'Segoe UI',Roboto,-apple-system,sans-serif; min-height:100vh; }
+
+  .shellbar{
+    background: linear-gradient(180deg, var(--shell), var(--shell-dark));
+    color:#fff; padding:0 16px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.18);
+  }
+  .shellbar-inner{
+    max-width:560px; margin:0 auto;
+    display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between;
+    gap:6px 14px; padding:12px 0;
+  }
+  .brand{ display:flex; align-items:center; gap:8px; font-weight:700; font-size:0.98rem; white-space:nowrap; }
+  .brand-icon{
+    display:inline-flex; align-items:center; justify-content:center;
+    width:22px; height:22px; border-radius:5px; background:var(--brand);
+    font-size:0.8rem; font-weight:800;
+  }
+  .brand-accent{ color:#8fc4ff; font-weight:400; }
+  .shell-nav{ display:flex; gap:4px; flex-wrap:wrap; }
+  .shell-nav a{
+    color:rgba(255,255,255,0.72); text-decoration:none; font-size:0.82rem; font-weight:600;
+    padding:6px 10px; border-radius:4px; transition: background 0.12s ease, color 0.12s ease;
+  }
+  .shell-nav a:hover{ background:rgba(255,255,255,0.08); color:#fff; }
+  .shell-nav a.active{ background:var(--brand); color:#fff; }
+
   .wrap{ max-width:560px; margin:0 auto; padding:24px 12px 60px; }
-  .tag{ display:inline-flex; background:var(--ink); color:var(--safety); font-family:'Courier New',monospace; font-weight:700; padding:6px 12px; font-size:0.78rem; }
-  h1{ font-size:1.5rem; margin:14px 0 6px; }
-  .sub{ color:#4a4f4a; font-size:0.92rem; margin-bottom:20px; }
-  .panel{ background:var(--panel); border:1px solid var(--line); border-radius:4px; padding:20px; }
-  .count{ font-family:'Courier New',monospace; font-weight:700; font-size:1.1rem; margin-bottom:16px; }
-  button{ font-family:inherit; cursor:pointer; border:none; border-radius:3px; font-weight:700; font-size:0.95rem; padding:12px 18px; width:100%; background:var(--ink); color:var(--safety); }
+  .eyebrow{ font-size:0.72rem; font-weight:700; text-transform:uppercase; letter-spacing:0.06em; color:var(--brand-dark); margin-bottom:4px; }
+  h1{ font-size:1.4rem; margin:0 0 6px; color:var(--shell); }
+  .sub{ color:var(--ink-soft); font-size:0.9rem; margin-bottom:20px; }
+  .panel{ background:var(--surface); border:1px solid var(--line); border-radius:6px; padding:20px; box-shadow:0 1px 3px rgba(29,45,62,0.06); }
+  .count{ font-weight:700; font-size:1.05rem; margin-bottom:16px; color:var(--shell); }
+  button{
+    font-family:inherit; cursor:pointer; border:none; border-radius:5px; font-weight:600;
+    font-size:0.95rem; padding:12px 18px; width:100%; background:var(--brand); color:#fff;
+    transition: background 0.12s ease;
+  }
+  button:hover{ background:var(--brand-dark); }
   button:disabled{ opacity:0.5; cursor:not-allowed; }
-  .status{ margin-top:16px; font-size:0.9rem; padding:12px; border-radius:3px; display:none; }
-  .status.ok{ display:block; background:#e4efe8; color:var(--ok); border:1px solid var(--ok); }
-  .status.err{ display:block; background:#f6e4e4; color:var(--danger); border:1px solid var(--danger); }
-  .spinner{ width:16px; height:16px; border:2px solid rgba(0,0,0,0.15); border-top-color:var(--ink); border-radius:50%; display:inline-block; animation:spin 0.7s linear infinite; vertical-align:middle; margin-right:8px; }
+  .status{ margin-top:16px; font-size:0.9rem; padding:12px; border-radius:5px; display:none; }
+  .status.ok{ display:block; background:var(--ok-bg); color:var(--ok); border:1px solid var(--ok); }
+  .status.err{ display:block; background:var(--danger-bg); color:var(--danger); border:1px solid var(--danger); }
+  .spinner{ width:16px; height:16px; border:2px solid rgba(255,255,255,0.4); border-top-color:#fff; border-radius:50%; display:inline-block; animation:spin 0.7s linear infinite; vertical-align:middle; margin-right:8px; }
   @keyframes spin{ to{ transform:rotate(360deg); } }
-  a.back{ display:inline-block; margin-top:20px; color:var(--ink); font-size:0.85rem; }
+  a.back{ display:inline-block; margin-top:20px; color:var(--ink-soft); font-size:0.85rem; text-decoration:none; }
+  a.back:hover{ color:var(--brand-dark); }
 </style>
 </head>
 <body>
+<header class="shellbar">
+  <div class="shellbar-inner">
+    <div class="brand"><span class="brand-icon">E</span>Estoque<span class="brand-accent">WMS</span></div>
+    <nav class="shell-nav">
+      <a href="index.html">Contagem</a>
+      <a href="resultados.html">Resultados</a>
+      <a href="admin.html" class="active">Admin</a>
+    </nav>
+  </div>
+</header>
 <div class="wrap">
-  <span class="tag">CONTAGEM DE ESTOQUE — ADMIN</span>
-  <h1>Carregar produtos na planilha</h1>
+  <div class="eyebrow">Administração</div>
+  <h1>Carregar produtos</h1>
   <div class="sub">Isso lê data/produtos.json e substitui a lista de produtos no banco de dados. As contagens já lançadas não são afetadas.</div>
   <div class="panel">
     <div class="count" id="count">carregando lista de data/produtos.json...</div>

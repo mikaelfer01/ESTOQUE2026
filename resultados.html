@@ -6,83 +6,112 @@
 <title>Resultados da Contagem</title>
 <style>
   :root{
-    --concrete: #d8d5cd;
-    --ink: #1f2320;
-    --ink-soft: #4a4f4a;
-    --panel: #eeece6;
-    --safety: #f2b300;
-    --safety-deep: #c98e00;
-    --ok: #2f6f4e;
-    --danger: #a83232;
-    --line: #a7a297;
+    --shell: #1d2d3e;
+    --shell-dark: #16232f;
+    --brand: #0a6ed1;
+    --brand-dark: #085caf;
+    --bg: #f5f6f7;
+    --surface: #ffffff;
+    --ink: #1d2d3e;
+    --ink-soft: #6a6d78;
+    --line: #d9dde1;
+    --ok: #107e3e;
+    --ok-bg: #e6f4ea;
+    --warning: #df6e0c;
+    --warning-bg: #fdf1e2;
+    --danger: #bb0000;
+    --danger-bg: #fbe9e9;
   }
   *{ box-sizing:border-box; }
   html,body{ margin:0; padding:0; }
   body{
-    background: var(--concrete); color: var(--ink);
+    background: var(--bg); color: var(--ink);
     font-family: 'Segoe UI', Roboto, -apple-system, sans-serif;
     min-height:100vh;
   }
-  .wrap{ max-width: 1100px; margin: 0 auto; padding: 16px 12px 80px; }
-  .topbar{ display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; gap:8px 14px; }
-  .tag{
-    display:inline-flex; align-items:center; gap:8px;
-    background:var(--ink); color:var(--safety);
-    font-family: 'Courier New', monospace; font-weight:700; letter-spacing:0.5px;
-    padding:6px 12px; font-size:0.78rem;
+
+  .shellbar{
+    background: linear-gradient(180deg, var(--shell), var(--shell-dark));
+    color:#fff; padding:0 16px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.18);
   }
-  h1{ font-size:1.4rem; margin: 14px 0 2px; font-weight:800; }
+  .shellbar-inner{
+    max-width:1100px; margin:0 auto;
+    display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between;
+    gap:6px 14px; padding:12px 0;
+  }
+  .brand{ display:flex; align-items:center; gap:8px; font-weight:700; font-size:0.98rem; white-space:nowrap; }
+  .brand-icon{
+    display:inline-flex; align-items:center; justify-content:center;
+    width:22px; height:22px; border-radius:5px; background:var(--brand);
+    font-size:0.8rem; font-weight:800;
+  }
+  .brand-accent{ color:#8fc4ff; font-weight:400; }
+  .shell-nav{ display:flex; gap:4px; flex-wrap:wrap; }
+  .shell-nav a{
+    color:rgba(255,255,255,0.72); text-decoration:none; font-size:0.82rem; font-weight:600;
+    padding:6px 10px; border-radius:4px; transition: background 0.12s ease, color 0.12s ease;
+  }
+  .shell-nav a:hover{ background:rgba(255,255,255,0.08); color:#fff; }
+  .shell-nav a.active{ background:var(--brand); color:#fff; }
+
+  .wrap{ max-width: 1100px; margin: 0 auto; padding: 20px 12px 80px; }
+  .eyebrow{ font-size:0.72rem; font-weight:700; text-transform:uppercase; letter-spacing:0.06em; color:var(--brand-dark); margin-bottom:4px; }
+  h1{ font-size:1.35rem; margin: 0 0 2px; font-weight:700; color:var(--shell); }
   .sub{ color:var(--ink-soft); font-size:0.88rem; margin-bottom:18px; }
-  a.back{ font-size:0.8rem; color:var(--ink-soft); text-decoration:none; white-space:nowrap; }
 
   .filters{
-    background: var(--panel); border:1px solid var(--line); border-radius:4px;
-    padding:14px; margin-bottom:16px;
+    background: var(--surface); border:1px solid var(--line); border-radius:6px;
+    padding:16px; margin-bottom:16px; box-shadow:0 1px 3px rgba(29,45,62,0.06);
     display:grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap:12px;
   }
   .field label{ display:block; font-size:0.75rem; color:var(--ink-soft); margin-bottom:5px; font-weight:600; }
   .field input, .field select{
     width:100%; padding:10px; border:1px solid var(--line);
-    border-radius:3px; font-size:1rem; background:#fff; color:var(--ink);
+    border-radius:5px; font-size:1rem; background:var(--surface); color:var(--ink);
   }
+  .field input:focus, .field select:focus{ outline:2px solid var(--brand); outline-offset:-1px; }
   .filters .actions{ display:flex; flex-wrap:wrap; align-items:flex-end; gap:8px; grid-column: 1 / -1; }
   .filters .actions button{ flex:1; min-width:120px; }
 
   button{
     font-family: inherit; cursor:pointer; border:none;
-    border-radius:3px; font-weight:700; font-size:0.85rem;
-    padding: 11px 14px; min-height:40px;
+    border-radius:5px; font-weight:600; font-size:0.85rem;
+    padding: 11px 14px; min-height:40px; transition: background 0.12s ease;
   }
-  .btn-primary{ background: var(--ink); color: var(--safety); }
-  .btn-secondary{ background:#fff; color:var(--ink); border:1px solid var(--line); }
+  .btn-primary{ background: var(--brand); color:#fff; }
+  .btn-primary:hover{ background: var(--brand-dark); }
+  .btn-secondary{ background:var(--surface); color:var(--ink); border:1px solid var(--line); }
+  .btn-secondary:hover{ background:#eef0f2; }
 
   .summary{
     display:grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap:10px;
     margin-bottom:18px;
   }
-  .stat{ background:#fff; border:1px solid var(--line); border-radius:4px; padding:12px 14px; }
-  .stat .num{ font-size:1.4rem; font-weight:800; font-family:'Courier New', monospace; }
-  .stat .lbl{ font-size:0.75rem; color:var(--ink-soft); text-transform:uppercase; letter-spacing:0.03em; }
+  .stat{ background:var(--surface); border:1px solid var(--line); border-radius:6px; padding:14px; box-shadow:0 1px 3px rgba(29,45,62,0.06); border-top:3px solid var(--brand); }
+  .stat .num{ font-size:1.5rem; font-weight:800; color:var(--shell); }
+  .stat .lbl{ font-size:0.72rem; color:var(--ink-soft); text-transform:uppercase; letter-spacing:0.04em; margin-top:2px; }
 
-  .table-wrap{ background:#fff; border:1px solid var(--line); border-radius:4px; overflow-x:auto; }
+  .table-wrap{ background:var(--surface); border:1px solid var(--line); border-radius:6px; overflow-x:auto; box-shadow:0 1px 3px rgba(29,45,62,0.06); }
   table{ width:100%; border-collapse:collapse; font-size:0.85rem; min-width:720px; }
   thead th{
-    text-align:left; padding:10px 12px; background:var(--ink); color:var(--safety);
+    text-align:left; padding:11px 12px; background:#eef1f4; color:var(--shell); border-bottom:2px solid var(--line);
     font-size:0.72rem; text-transform:uppercase; letter-spacing:0.03em; position:sticky; top:0;
   }
-  tbody td{ padding:9px 12px; border-bottom:1px solid #eee; }
-  tbody tr:hover{ background: var(--concrete); }
-  .mono{ font-family:'Courier New', monospace; }
+  tbody td{ padding:10px 12px; border-bottom:1px solid #eef0f2; }
+  tbody tr:nth-child(even){ background:#fafbfc; }
+  tbody tr:hover{ background: #eef6ff; }
+  .mono{ font-family:'Consolas', 'Courier New', monospace; }
   .status-badge{
-    display:inline-block; padding:2px 8px; border-radius:3px; font-size:0.72rem; font-weight:700;
+    display:inline-block; padding:3px 9px; border-radius:20px; font-size:0.72rem; font-weight:700;
   }
-  .status-aberta{ background:#fff4d6; color:var(--safety-deep); }
-  .status-finalizada{ background:#e4efe8; color:var(--ok); }
+  .status-aberta{ background:var(--warning-bg); color:var(--warning); }
+  .status-finalizada{ background:var(--ok-bg); color:var(--ok); }
 
   .empty{ text-align:center; color:var(--ink-soft); padding:30px 10px; font-size:0.9rem; }
   .spinner{
     width:16px; height:16px; border:2px solid rgba(0,0,0,0.15);
-    border-top-color:var(--ink); border-radius:50%; display:inline-block;
+    border-top-color:var(--brand); border-radius:50%; display:inline-block;
     animation: spin 0.7s linear infinite; vertical-align:middle;
   }
   @keyframes spin{ to{ transform:rotate(360deg); } }
@@ -91,16 +120,17 @@
      e navegar num celular do que rolar uma tabela larga na horizontal. */
   @media (max-width: 640px){
     .summary{ grid-template-columns: repeat(2, 1fr); }
-    .table-wrap{ overflow-x:visible; border:none; background:none; }
+    .table-wrap{ overflow-x:visible; border:none; background:none; box-shadow:none; }
     table, thead, tbody, tr, td{ display:block; width:100%; }
     thead{ display:none; }
     tbody tr{
-      background:#fff; border:1px solid var(--line); border-radius:4px;
-      margin-bottom:10px; padding:10px 12px;
+      background:var(--surface); border:1px solid var(--line); border-radius:6px;
+      margin-bottom:10px; padding:10px 12px; box-shadow:0 1px 3px rgba(29,45,62,0.06);
     }
+    tbody tr:nth-child(even){ background:var(--surface); }
     tbody tr td{
       display:flex; justify-content:space-between; align-items:center; gap:10px;
-      padding:6px 0; border-bottom:1px dashed #eee; text-align:right;
+      padding:6px 0; border-bottom:1px dashed #eef0f2; text-align:right;
     }
     tbody tr td:last-child{ border-bottom:none; }
     tbody tr td::before{
@@ -108,18 +138,25 @@
       font-size:0.72rem; color:var(--ink-soft); text-transform:uppercase;
       letter-spacing:0.03em; font-weight:700; text-align:left; flex-shrink:0;
     }
-    tbody tr:hover{ background:#fff; }
+    tbody tr:hover{ background:var(--surface); }
     td.empty-cell{ display:block !important; padding:0; }
     td.empty-cell::before{ content:none; }
   }
 </style>
 </head>
 <body>
-<div class="wrap">
-  <div class="topbar">
-    <span class="tag">CONTAGEM DE ESTOQUE — RESULTADOS</span>
-    <a class="back" href="index.html">&larr; Voltar para a contagem</a>
+<header class="shellbar">
+  <div class="shellbar-inner">
+    <div class="brand"><span class="brand-icon">E</span>Estoque<span class="brand-accent">WMS</span></div>
+    <nav class="shell-nav">
+      <a href="index.html">Contagem</a>
+      <a href="resultados.html" class="active">Resultados</a>
+      <a href="admin.html">Admin</a>
+    </nav>
   </div>
+</header>
+<div class="wrap">
+  <div class="eyebrow">Relatórios</div>
   <h1>Resultados das contagens</h1>
   <div class="sub">Filtre por período, sessão, status ou produto para visualizar os lançamentos.</div>
 
