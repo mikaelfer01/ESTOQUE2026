@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Contagem de Estoque</title>
+<style>
+  :root{
+    --concrete: #d8d5cd;
+    --concrete-dark: #b9b5aa;
+    --ink: #1f2320;
+    --ink-soft: #4a4f4a;
+    --panel: #eeece6;
+    --safety: #f2b300;
+    --safety-deep: #c98e00;
+    --ok: #2f6f4e;
+    --danger: #a83232;
+    --line: #a7a297;
+    font-size: 16px;
+  }
+  *{ box-sizing:border-box; }
+  html,body{ margin:0; padding:0; }
+  body{
+    background: var(--concrete);
+    color: var(--ink);
+    font-family: 'Segoe UI', Roboto, -apple-system, sans-serif;
+    min-height:100vh;
+    background-image:
+      linear-gradient(var(--concrete-dark) 1px, transparent 1px),
+      linear-gradient(90deg, var(--concrete-dark) 1px, transparent 1px);
+    background-size: 100% 100%, 100% 100%;
+  }
+  .wrap{ max-width: 640px; margin: 0 auto; padding: 20px 16px 80px; }
+
+  .tag{
+    display:inline-flex; align-items:center; gap:8px;
+    background:var(--ink); color:var(--safety);
+    font-family: 'Courier New', monospace;
+    font-weight:700; letter-spacing:0.5px;
+    padding:6px 12px; font-size:0.78rem;
+    clip-path: polygon(0 0, 100% 0, 100% 70%, 96% 100%, 0 100%);
+  }
+
+  h1{
+    font-size:1.7rem; margin: 14px 0 2px; font-weight:800;
+    letter-spacing: -0.01em;
+  }
+  .sub{ color:var(--ink-soft); font-size:0.92rem; margin-bottom:20px; }
+
+  .panel{
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    padding: 18px;
+    margin-bottom: 16px;
+  }
+
+  .session-row{
+    display:flex; justify-content:space-between; align-items:center;
+    padding:12px 14px; border:1px solid var(--line); border-radius:4px;
+    background:#fff; margin-bottom:8px;
+  }
+  .session-row .lbl{ font-family:'Courier New', monospace; font-weight:700; }
+  .session-row .status{ font-size:0.78rem; color:var(--ok); }
+
+  button{
+    font-family: inherit; cursor:pointer; border:none;
+    border-radius:3px; font-weight:700; font-size:0.92rem;
+    padding: 10px 16px; transition: transform 0.05s ease;
+  }
+  button:active{ transform: translateY(1px); }
+  .btn-primary{ background: var(--ink); color: var(--safety); }
+  .btn-primary:hover{ background:#000; }
+  .btn-secondary{ background:#fff; color:var(--ink); border:1px solid var(--line); }
+  .btn-danger{ background: var(--danger); color:#fff; }
+  .btn-block{ width:100%; }
+  button:disabled{ opacity:0.45; cursor:not-allowed; }
+
+  .field label{ display:block; font-size:0.8rem; color:var(--ink-soft); margin-bottom:5px; font-weight:600; }
+  .field input, .field select{
+    width:100%; padding:10px 12px; border:1px solid var(--line);
+    border-radius:3px; font-size:1rem; background:#fff; color:var(--ink);
+  }
+  .field{ margin-bottom:14px; }
+
+  .search-results{ max-height:240px; overflow-y:auto; border:1px solid var(--line); border-radius:3px; background:#fff; }
+  .prod-item{ padding:10px 12px; border-bottom:1px solid #eee; cursor:pointer; display:flex; justify-content:space-between; gap:10px; }
+  .prod-item:last-child{ border-bottom:none; }
+  .prod-item:hover{ background: var(--concrete); }
+  .prod-sku{ font-family:'Courier New', monospace; font-weight:700; font-size:0.85rem; white-space:nowrap; }
+  .prod-desc{ font-size:0.88rem; color:var(--ink-soft); text-align:right; }
+
+  .selected-product{
+    display:flex; justify-content:space-between; align-items:center;
+    background: #fff; border:2px solid var(--safety-deep); border-radius:4px;
+    padding: 12px 14px; margin-bottom:14px;
+  }
+  .selected-product .name{ font-weight:700; }
+  .selected-product .sku{ font-family:'Courier New', monospace; font-size:0.8rem; color:var(--ink-soft); }
+  .clear-sel{ background:none; border:none; color:var(--ink-soft); font-size:1.2rem; padding:0 4px; }
+
+  .header-bar{
+    display:flex; justify-content:space-between; align-items:center;
+    margin-bottom:16px; padding-bottom:14px; border-bottom:2px solid var(--ink);
+  }
+  .header-bar .sess-label{ font-family:'Courier New', monospace; font-weight:700; font-size:0.95rem; }
+  .header-bar .sess-sub{ font-size:0.75rem; color:var(--ink-soft); }
+
+  .log{ margin-top:18px; }
+  .log h3{ font-size:0.85rem; color:var(--ink-soft); margin-bottom:8px; font-weight:700; }
+  .log-item{
+    display:flex; justify-content:space-between; padding:9px 0;
+    border-bottom:1px solid var(--concrete-dark); font-size:0.9rem;
+  }
+  .log-qty{ font-weight:700; color:var(--ok); }
+
+  .toast{
+    position:fixed; left:50%; bottom:24px; transform:translateX(-50%);
+    background:var(--ink); color:#fff; padding:12px 20px; border-radius:4px;
+    font-size:0.9rem; opacity:0; pointer-events:none; transition:opacity 0.2s ease, transform 0.2s ease;
+    max-width:90vw; text-align:center;
+  }
+  .toast.show{ opacity:1; transform:translateX(-50%) translateY(-6px); }
+  .toast.error{ background: var(--danger); }
+
+  .empty{ text-align:center; color:var(--ink-soft); padding:24px 10px; font-size:0.9rem; }
+  .spinner{
+    width:18px; height:18px; border:2px solid rgba(255,255,255,0.35);
+    border-top-color:#fff; border-radius:50%; display:inline-block;
+    animation: spin 0.7s linear infinite; vertical-align:middle;
+  }
+  @keyframes spin{ to{ transform:rotate(360deg); } }
+
+  .modal-backdrop{
+    position:fixed; inset:0; background:rgba(0,0,0,0.5);
+    display:flex; align-items:center; justify-content:center; padding:20px; z-index:50;
+  }
+  .modal{ background:#fff; border-radius:6px; padding:22px; max-width:380px; width:100%; }
+  .modal h3{ margin-top:0; }
+  .modal-actions{ display:flex; gap:10px; margin-top:18px; }
+  .modal-actions button{ flex:1; }
+</style>
+</head>
+<body>
+<div class="wrap" id="app">
+  <span class="tag">CONTAGEM DE ESTOQUE</span>
+  <div id="content"></div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script src="config.js"></script>
+<script>
+let state = {
+  view: 'loading', // loading | sessions | counting
+  openSessions: [],
+  products: [],
+  session: null, // {id, column, label}
+  search: '',
+  selectedProduct: null,
+  qty: '',
+  sessionLog: [], // {sku, desc, qty, time}
+  busy: false,
+  confirmFinish: false
+};
+
+function render(){
+  const c = document.getElementById('content');
+  if(state.view === 'loading'){
+    c.innerHTML = `<div class="empty"><span class="spinner" style="border-color:rgba(0,0,0,0.15); border-top-color:var(--ink);"></span><br><br>Carregando...</div>`;
+    return;
+  }
+  if(state.view === 'sessions'){
+    c.innerHTML = renderSessions();
+    attachSessionEvents();
+    return;
+  }
+  if(state.view === 'counting'){
+    c.innerHTML = renderCounting();
+    attachCountingEvents();
+    return;
+  }
+}
+
+function renderSessions(){
+  let sessionsHtml = '';
+  if(state.openSessions.length === 0){
+    sessionsHtml = `<div class="empty">Nenhuma contagem aberta no momento.</div>`;
+  } else {
+    sessionsHtml = state.openSessions.map(s => `
+      <div class="session-row">
+        <div>
+          <div class="lbl">${escapeHtml(s.label)}</div>
+          <div class="status">● aberta</div>
+        </div>
+        <button class="btn-secondary" data-join="${escapeHtml(s.id)}" data-col="${s.column}" data-label="${escapeHtml(s.label)}">Entrar</button>
+      </div>
+    `).join('');
+  }
+  return `
+    <h1>Iniciar contagem</h1>
+    <div class="sub">Entre numa contagem já aberta por outro colega, ou comece uma nova.</div>
+    <div class="panel">
+      <div class="field"><label>Contagens em aberto</label></div>
+      ${sessionsHtml}
+    </div>
+    <button class="btn-primary btn-block" id="new-session" ${state.busy ? 'disabled' : ''}>
+      ${state.busy ? '<span class="spinner"></span>' : '+ Iniciar nova contagem'}
+    </button>
+  `;
+}
+
+function renderCounting(){
+  const filtered = state.search.trim() === '' ? [] : state.products.filter(p => {
+    const q = state.search.toLowerCase();
+    return p.sku.toLowerCase().includes(q) || p.descricao.toLowerCase().includes(q);
+  }).slice(0, 30);
+
+  let selBlock = '';
+  if(state.selectedProduct){
+    selBlock = `
+      <div class="selected-product">
+        <div>
+          <div class="name">${escapeHtml(state.selectedProduct.descricao)}</div>
+          <div class="sku">${escapeHtml(state.selectedProduct.sku)}</div>
+        </div>
+        <button class="clear-sel" id="clear-sel">✕</button>
+      </div>
+      <div class="field">
+        <label>Quantidade (kg)</label>
+        <input type="number" inputmode="decimal" step="any" min="0" id="qty-input" placeholder="0.0" value="${state.qty}">
+      </div>
+      <button class="btn-primary btn-block" id="lancar-btn" ${state.busy ? 'disabled' : ''}>
+        ${state.busy ? '<span class="spinner"></span>' : 'Lançar quantidade'}
+      </button>
+    `;
+  } else {
+    selBlock = `
+      <div class="field">
+        <label>Buscar produto (SKU ou descrição)</label>
+        <input type="text" id="search-input" placeholder="Ex: 4521 ou filé de peito" value="${escapeHtml(state.search)}" autocomplete="off">
+      </div>
+      <div class="search-results">
+        ${ state.search.trim() === '' ? `<div class="empty">Digite para buscar um produto.</div>`
+          : filtered.length === 0 ? `<div class="empty">Nenhum produto encontrado.</div>`
+          : filtered.map(p => `
+              <div class="prod-item" data-sku="${escapeHtml(p.sku)}">
+                <span class="prod-sku">${escapeHtml(p.sku)}</span>
+                <span class="prod-desc">${escapeHtml(p.descricao)}</span>
+              </div>
+            `).join('')
+        }
+      </div>
+    `;
+  }
+
+  let logBlock = '';
+  if(state.sessionLog.length > 0){
+    logBlock = `
+      <div class="log">
+        <h3>LANÇAMENTOS NESTA SESSÃO (VOCÊ)</h3>
+        ${state.sessionLog.slice().reverse().map(l => `
+          <div class="log-item">
+            <span>${escapeHtml(l.desc)} <span style="color:var(--ink-soft); font-family:'Courier New',monospace;">(${escapeHtml(l.sku)})</span></span>
+            <span class="log-qty">+${l.qty} kg</span>
+          </div>
+        `).join('')}
+      </div>
+    `;
+  }
+
+  const modal = state.confirmFinish ? `
+    <div class="modal-backdrop" id="modal-backdrop">
+      <div class="modal">
+        <h3>Finalizar esta contagem?</h3>
+        <p style="color:var(--ink-soft); font-size:0.9rem;">Depois de finalizada, ninguém mais poderá lançar quantidades nesta sessão. A coluna fica registrada na planilha normalmente.</p>
+        <div class="modal-actions">
+          <button class="btn-secondary" id="cancel-finish">Cancelar</button>
+          <button class="btn-danger" id="confirm-finish-btn">Finalizar</button>
+        </div>
+      </div>
+    </div>
+  ` : '';
+
+  return `
+    <div class="header-bar">
+      <div>
+        <div class="sess-label">${escapeHtml(state.session.label)}</div>
+        <div class="sess-sub">contagem em andamento</div>
+      </div>
+      <button class="btn-danger" id="finish-btn">Finalizar contagem</button>
+    </div>
+    <div class="panel">
+      ${selBlock}
+    </div>
+    ${logBlock}
+    ${modal}
+  `;
+}
+
+function escapeHtml(s){
+  return String(s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+}
+
+function showToast(msg, isError){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show' + (isError ? ' error' : '');
+  clearTimeout(window._toastTimer);
+  window._toastTimer = setTimeout(() => { t.className = 'toast'; }, 2600);
+}
+
+// ---- API calls ----
+async function apiGet(action){
+  const res = await fetch(`${WEB_APP_URL}?action=${action}`, { method: 'GET' });
+  const data = await res.json();
+  if(data.error) throw new Error(data.error);
+  return data;
+}
+async function apiPost(body){
+  const res = await fetch(WEB_APP_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify(body)
+  });
+  const data = await res.json();
+  if(data.error) throw new Error(data.error);
+  return data;
+}
+
+async function loadSessionsScreen(){
+  state.view = 'loading'; render();
+  try{
+    const [prodRes, sessRes] = await Promise.all([apiGet('getProducts'), apiGet('getOpenSessions')]);
+    state.products = prodRes.products;
+    state.openSessions = sessRes.sessions;
+    state.view = 'sessions';
+  } catch(err){
+    showToast('Erro ao carregar: ' + err.message, true);
+    state.view = 'sessions';
+    state.openSessions = [];
+  }
+  render();
+}
+
+function attachSessionEvents(){
+  document.getElementById('new-session').addEventListener('click', async () => {
+    state.busy = true; render();
+    try{
+      const r = await apiPost({ action: 'startSession' });
+      state.session = { id: r.sessionId, column: r.column, label: r.label };
+      state.sessionLog = [];
+      state.selectedProduct = null;
+      state.search = '';
+      state.view = 'counting';
+      showToast('Contagem iniciada: ' + r.label);
+    } catch(err){
+      showToast('Erro ao iniciar contagem: ' + err.message, true);
+    }
+    state.busy = false;
+    render();
+  });
+
+  document.querySelectorAll('[data-join]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      state.session = { id: btn.dataset.join, column: Number(btn.dataset.col), label: btn.dataset.label };
+      state.sessionLog = [];
+      state.selectedProduct = null;
+      state.search = '';
+      state.view = 'counting';
+      showToast('Você entrou na contagem: ' + btn.dataset.label);
+      render();
+    });
+  });
+}
+
+function attachCountingEvents(){
+  const searchInput = document.getElementById('search-input');
+  if(searchInput){
+    searchInput.addEventListener('input', (e) => {
+      state.search = e.target.value;
+      render();
+      const el = document.getElementById('search-input');
+      el.focus();
+      el.selectionStart = el.selectionEnd = el.value.length;
+    });
+    document.querySelectorAll('.prod-item').forEach(item => {
+      item.addEventListener('click', () => {
+        const sku = item.dataset.sku;
+        state.selectedProduct = state.products.find(p => p.sku === sku);
+        state.qty = '';
+        render();
+        setTimeout(() => { const q = document.getElementById('qty-input'); if(q) q.focus(); }, 0);
+      });
+    });
+  }
+
+  const clearSel = document.getElementById('clear-sel');
+  if(clearSel){
+    clearSel.addEventListener('click', () => {
+      state.selectedProduct = null;
+      render();
+      setTimeout(() => { const s = document.getElementById('search-input'); if(s) s.focus(); }, 0);
+    });
+  }
+
+  const qtyInput = document.getElementById('qty-input');
+  if(qtyInput){
+    qtyInput.addEventListener('input', (e) => { state.qty = e.target.value; });
+    qtyInput.addEventListener('keydown', (e) => { if(e.key === 'Enter') doLancar(); });
+  }
+
+  const lancarBtn = document.getElementById('lancar-btn');
+  if(lancarBtn) lancarBtn.addEventListener('click', doLancar);
+
+  const finishBtn = document.getElementById('finish-btn');
+  if(finishBtn) finishBtn.addEventListener('click', () => { state.confirmFinish = true; render(); });
+
+  const cancelFinish = document.getElementById('cancel-finish');
+  if(cancelFinish) cancelFinish.addEventListener('click', () => { state.confirmFinish = false; render(); });
+
+  const confirmFinishBtn = document.getElementById('confirm-finish-btn');
+  if(confirmFinishBtn) confirmFinishBtn.addEventListener('click', async () => {
+    state.busy = true;
+    try{
+      await apiPost({ action: 'finishSession', sessionId: state.session.id });
+      showToast('Contagem finalizada.');
+      state.confirmFinish = false;
+      state.session = null;
+      await loadSessionsScreen();
+      return;
+    } catch(err){
+      showToast('Erro ao finalizar: ' + err.message, true);
+    }
+    state.busy = false;
+    state.confirmFinish = false;
+    render();
+  });
+}
+
+async function doLancar(){
+  const qtyVal = parseFloat(state.qty);
+  if(!qtyVal || qtyVal <= 0){
+    showToast('Informe uma quantidade válida.', true);
+    return;
+  }
+  state.busy = true; render();
+  try{
+    await apiPost({ action: 'addCount', sessionId: state.session.id, sku: state.selectedProduct.sku, qtd: qtyVal });
+    state.sessionLog.push({ sku: state.selectedProduct.sku, desc: state.selectedProduct.descricao, qty: qtyVal });
+    showToast('Lançado: ' + qtyVal + ' kg — ' + state.selectedProduct.descricao);
+    state.selectedProduct = null;
+    state.search = '';
+    state.qty = '';
+  } catch(err){
+    showToast('Erro ao lançar: ' + err.message, true);
+  }
+  state.busy = false;
+  render();
+  setTimeout(() => { const s = document.getElementById('search-input'); if(s) s.focus(); }, 0);
+}
+
+loadSessionsScreen();
+</script>
+</body>
+</html>
