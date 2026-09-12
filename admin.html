@@ -28,7 +28,7 @@
 <div class="wrap">
   <span class="tag">CONTAGEM DE ESTOQUE — ADMIN</span>
   <h1>Carregar produtos na planilha</h1>
-  <div class="sub">Isso lê data/produtos.json e grava (sobrescrevendo) as colunas A e B da aba Inventario. As colunas de contagem (C em diante) não são afetadas.</div>
+  <div class="sub">Isso lê data/produtos.json e substitui a lista de produtos no banco de dados. As contagens já lançadas não são afetadas.</div>
   <div class="panel">
     <div class="count" id="count">carregando lista de data/produtos.json...</div>
     <button id="btn" disabled>Carregar produtos</button>
@@ -36,7 +36,6 @@
   </div>
   <a class="back" href="index.html">&larr; Voltar para a contagem</a>
 </div>
-<script src="config.js"></script>
 <script>
 let PRODUCTS = [];
 
@@ -60,15 +59,15 @@ document.getElementById('btn').addEventListener('click', async () => {
   const statusEl = document.getElementById('status');
   statusEl.className = 'status';
   try {
-    const res = await fetch(WEB_APP_URL, {
+    const res = await fetch('/api/products', {
       method: 'POST',
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify({ action: 'loadProducts', products: PRODUCTS })
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ products: PRODUCTS })
     });
     const data = await res.json();
     if (data.error) throw new Error(data.error);
     statusEl.className = 'status ok';
-    statusEl.textContent = 'Pronto! ' + data.count + ' produtos gravados na aba Inventario.';
+    statusEl.textContent = 'Pronto! ' + data.count + ' produtos gravados no banco de dados.';
     btn.textContent = 'Carregado com sucesso';
   } catch (err) {
     statusEl.className = 'status err';

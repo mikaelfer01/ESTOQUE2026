@@ -143,12 +143,14 @@
 </head>
 <body>
 <div class="wrap" id="app">
-  <span class="tag">CONTAGEM DE ESTOQUE</span>
+  <div style="display:flex; justify-content:space-between; align-items:center;">
+    <span class="tag">CONTAGEM DE ESTOQUE</span>
+    <a href="resultados.html" style="font-size:0.8rem; color:var(--ink-soft); text-decoration:none;">Ver resultados &rarr;</a>
+  </div>
   <div id="content"></div>
 </div>
 <div class="toast" id="toast"></div>
 
-<script src="config.js"></script>
 <script>
 let state = {
   view: 'loading', // loading | sessions | counting
@@ -192,7 +194,7 @@ function renderSessions(){
           <div class="lbl">${escapeHtml(s.label)}</div>
           <div class="status">● aberta</div>
         </div>
-        <button class="btn-secondary" data-join="${escapeHtml(s.id)}" data-col="${s.column}" data-label="${escapeHtml(s.label)}">Entrar</button>
+        <button class="btn-secondary" data-join="${escapeHtml(s.id)}" data-label="${escapeHtml(s.label)}">Entrar</button>
       </div>
     `).join('');
   }
@@ -310,18 +312,36 @@ function showToast(msg, isError){
 }
 
 // ---- API calls ----
-async function apiGet(action){
-  const res = await fetch(`${WEB_APP_URL}?action=${action}`, { method: 'GET' });
+async function getProducts(){
+  const res = await fetch('/api/products');
   const data = await res.json();
   if(data.error) throw new Error(data.error);
   return data;
 }
-async function apiPost(body){
-  const res = await fetch(WEB_APP_URL, {
+async function getOpenSessions(){
+  const res = await fetch('/api/sessions');
+  const data = await res.json();
+  if(data.error) throw new Error(data.error);
+  return data;
+}
+async function startSession(){
+  const res = await fetch('/api/sessions', { method: 'POST' });
+  const data = await res.json();
+  if(data.error) throw new Error(data.error);
+  return data;
+}
+async function addCount(sessionId, sku, qtd){
+  const res = await fetch('/api/counts', {
     method: 'POST',
-    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-    body: JSON.stringify(body)
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ sessionId, sku, qtd })
   });
+  const data = await res.json();
+  if(data.error) throw new Error(data.error);
+  return data;
+}
+async function finishSession(sessionId){
+  const res = await fetch(`/api/sessions/${sessionId}/finish`, { method: 'POST' });
   const data = await res.json();
   if(data.error) throw new Error(data.error);
   return data;
@@ -330,7 +350,7 @@ async function apiPost(body){
 async function loadSessionsScreen(){
   state.view = 'loading'; render();
   try{
-    const [prodRes, sessRes] = await Promise.all([apiGet('getProducts'), apiGet('getOpenSessions')]);
+    const [prodRes, sessRes] = await Promise.all([getProducts(), getOpenSessions()]);
     state.products = prodRes.products;
     state.openSessions = sessRes.sessions;
     state.view = 'sessions';
@@ -346,8 +366,8 @@ function attachSessionEvents(){
   document.getElementById('new-session').addEventListener('click', async () => {
     state.busy = true; render();
     try{
-      const r = await apiPost({ action: 'startSession' });
-      state.session = { id: r.sessionId, column: r.column, label: r.label };
+      const r = await startSession();
+      state.session = { id: r.sessionId, label: r.label };
       state.sessionLog = [];
       state.selectedProduct = null;
       state.search = '';
@@ -362,7 +382,7 @@ function attachSessionEvents(){
 
   document.querySelectorAll('[data-join]').forEach(btn => {
     btn.addEventListener('click', () => {
-      state.session = { id: btn.dataset.join, column: Number(btn.dataset.col), label: btn.dataset.label };
+      state.session = { id: btn.dataset.join, label: btn.dataset.label };
       state.sessionLog = [];
       state.selectedProduct = null;
       state.search = '';
@@ -422,7 +442,7 @@ function attachCountingEvents(){
   if(confirmFinishBtn) confirmFinishBtn.addEventListener('click', async () => {
     state.busy = true;
     try{
-      await apiPost({ action: 'finishSession', sessionId: state.session.id });
+      await finishSession(state.session.id);
       showToast('Contagem finalizada.');
       state.confirmFinish = false;
       state.session = null;
@@ -445,7 +465,7 @@ async function doLancar(){
   }
   state.busy = true; render();
   try{
-    await apiPost({ action: 'addCount', sessionId: state.session.id, sku: state.selectedProduct.sku, qtd: qtyVal });
+    await addCount(state.session.id, state.selectedProduct.sku, qtyVal);
     state.sessionLog.push({ sku: state.selectedProduct.sku, desc: state.selectedProduct.descricao, qty: qtyVal });
     showToast('Lançado: ' + qtyVal + ' kg — ' + state.selectedProduct.descricao);
     state.selectedProduct = null;
