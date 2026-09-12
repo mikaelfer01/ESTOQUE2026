@@ -10,6 +10,9 @@ App simples para contagem física de estoque por posição. Backend 100% na Verc
 ├── resultados.html      → visualiza os lançamentos, com filtros por data/sessão/produto
 ├── data/
 │   └── produtos.json   → sua lista de produtos (SKU + descrição)
+├── manifest.json         → deixa o site instalável como app (PWA) no celular
+├── sw.js                 → service worker (cache do "app shell", nunca das chamadas /api)
+├── icons/                → ícones do app instalado (192px, 512px, maskable)
 ├── lib/
 │   └── db.js            → conexão com o Postgres e criação das tabelas
 └── api/
@@ -60,6 +63,21 @@ App simples para contagem física de estoque por posição. Backend 100% na Verc
 3. Busque o produto por SKU ou descrição, digite o kg contado e clique em **Lançar quantidade**. Pode repetir para o mesmo produto em posições diferentes — o sistema soma automaticamente.
 4. Ao terminar, clique em **Finalizar contagem**.
 5. Acesse **`.../resultados.html`** a qualquer momento para ver todos os lançamentos, filtrando por data de início da contagem, sessão específica, status (aberta/finalizada) ou por SKU/descrição do produto. Dá para exportar a visão filtrada em CSV.
+
+## Instalar como app no celular (PWA)
+
+O site é um PWA (Progressive Web App) instalável — não é um `.apk`, mas se comporta como um app: ícone na tela inicial, abre em tela cheia sem barra de endereço, e sempre carrega a versão mais nova publicada na Vercel (sem precisar reinstalar nada a cada atualização).
+
+**Android (Chrome):**
+1. Abra a URL da Vercel no Chrome.
+2. Toque no menu (⋮) > **"Adicionar à tela inicial"** (ou vai aparecer um banner "Instalar app" automaticamente).
+3. Confirme — o ícone "Estoque WMS" aparece na tela inicial e abre como app.
+
+**iPhone (Safari):**
+1. Abra a URL no Safari.
+2. Toque no ícone de compartilhar (□↑) > **"Adicionar à Tela de Início"**.
+
+Como as chamadas para `/api/*` nunca são cacheadas pelo service worker (só o HTML/CSS/JS do app), os dados de produtos, sessões e contagens são sempre buscados ao vivo — o "modo offline" cobre só a interface, não os dados.
 
 ## Observações
 
