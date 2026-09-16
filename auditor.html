@@ -103,6 +103,7 @@
   .feed-item{ padding:9px 16px; border-bottom:1px solid #f0f1f2; font-size:0.85rem; display:flex; justify-content:space-between; gap:10px; }
   .feed-item:last-child{ border-bottom:none; }
   .feed-item .desc{ font-weight:600; }
+  .feed-item .sku{ font-family:'Consolas','Courier New', monospace; font-weight:700; color:var(--brand-dark); font-size:0.76rem; margin-left:6px; }
   .feed-item .meta{ font-size:0.72rem; color:var(--ink-soft); margin-top:1px; }
   .feed-item .qty{ font-weight:700; color:var(--ok); white-space:nowrap; }
 
@@ -187,8 +188,8 @@ function contagemCard(session){
   const feed = rows.slice(0, 12).map(r => `
     <div class="feed-item">
       <div>
-        <div class="desc">${escapeHtml(r.descricao || r.sku)}</div>
-        <div class="meta">${escapeHtml(r.sku)} · ${fmtTime(r.atualizado_em)}</div>
+        <div class="desc">${escapeHtml(r.descricao || r.sku)}<span class="sku">${escapeHtml(r.sku)}</span></div>
+        <div class="meta">${fmtTime(r.atualizado_em)}</div>
       </div>
       <div class="qty">${Number(r.quantidade).toLocaleString('pt-BR', {maximumFractionDigits:2})} kg</div>
     </div>
@@ -220,7 +221,7 @@ function posicaoCard(session){
   const feed = rows.slice(0, 12).map(r => `
     <div class="feed-item">
       <div>
-        <div class="desc">${escapeHtml(r.descricao || r.sku)}</div>
+        <div class="desc">${escapeHtml(r.descricao || r.sku)}<span class="sku">${escapeHtml(r.sku)}</span></div>
         <div class="meta">Posição ${escapeHtml(r.posicao || '—')} · ${fmtTime(r.criado_em)}</div>
       </div>
       <div class="qty">${Number(r.quantidade).toLocaleString('pt-BR', {maximumFractionDigits:2})} kg</div>
