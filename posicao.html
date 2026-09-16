@@ -96,22 +96,27 @@
   .btn-block{ width:100%; }
   button:disabled{ opacity:0.5; cursor:not-allowed; }
 
-  .field label{ display:block; font-size:0.78rem; color:var(--ink-soft); margin-bottom:5px; font-weight:600; }
-  .field input, .field select{
-    width:100%; padding:10px 12px; border:1px solid var(--line);
-    border-radius:5px; font-size:1rem; background:var(--surface-raised); color:var(--ink);
+  .field label{ display:block; font-size:0.8rem; color:var(--ink-soft); margin-bottom:6px; font-weight:600; }
+
+  /* Estilo base para TODOS os campos de texto/data/número da página —
+     antes só valia para inputs dentro de .field, deixando "Posição" e
+     "Buscar produto" (fora de .field) pequenos e sem respiro. */
+  input[type="text"], input[type="number"], input[type="date"], select{
+    width:100%; min-height:52px; padding:12px 14px; border:1px solid var(--line);
+    border-radius:6px; font-size:1.05rem; background:var(--surface-raised); color:var(--ink);
+    color-scheme: dark; /* deixa o ícone/calendário do date picker visível no tema escuro */
   }
-  .field input:focus, .field select:focus{ outline:2px solid var(--brand); outline-offset:-1px; }
+  input:focus, select:focus{ outline:2px solid var(--brand); outline-offset:-1px; }
   .field{ margin-bottom:0; }
-  .field-row{ display:flex; gap:10px; }
+  .field-row{ display:flex; gap:12px; }
   .field-row .field{ flex:1; min-width:0; }
 
-  .scan-row{ display:flex; gap:8px; }
+  .scan-row{ display:flex; gap:10px; }
   .scan-row input{ flex:1; min-width:0; }
   .scan-btn{
     display:flex; align-items:center; justify-content:center;
     background: var(--surface-raised); color:var(--brand); border:1px solid var(--brand);
-    flex-shrink:0; width:46px; font-size:1.2rem; padding:0;
+    flex-shrink:0; width:52px; font-size:1.3rem; padding:0;
   }
 
   .posicao-active{
