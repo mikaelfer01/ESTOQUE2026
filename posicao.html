@@ -103,6 +103,42 @@
   }
   input:focus{ outline:2px solid var(--brand); outline-offset:-1px; }
 
+  .modal-backdrop{
+    position:fixed; inset:0; background:rgba(15,25,35,0.55);
+    display:flex; align-items:center; justify-content:center; padding:20px; z-index:50;
+  }
+  .modal{ background:var(--surface); border-radius:8px; padding:22px; max-width:380px; width:100%; box-shadow:0 12px 40px rgba(0,0,0,0.25); }
+
+  .scan-row{ display:flex; gap:10px; }
+  .scan-row input{ flex:1; min-width:0; }
+  .scan-btn{
+    display:flex; align-items:center; justify-content:center;
+    background: var(--surface-raised); color:var(--brand); border:1px solid var(--brand);
+    flex-shrink:0; width:46px; font-size:1.2rem; padding:0;
+  }
+
+  .posicao-active{
+    display:flex; justify-content:space-between; align-items:center;
+    background: var(--ok-bg); border:1px solid var(--ok); border-radius:5px;
+    padding: 10px 14px;
+  }
+  .posicao-active .val{ font-family:'Consolas','Courier New', monospace; font-weight:700; color:var(--ok); font-size:1.05rem; }
+  .posicao-active .lbl{ font-size:0.7rem; color:var(--ink-soft); text-transform:uppercase; letter-spacing:0.04em; }
+
+  .scanner-modal .modal{ max-width:480px; padding:0; overflow:hidden; background:#000; }
+  .scanner-video-wrap{ position:relative; width:100%; aspect-ratio: 3/4; background:#000; }
+  .scanner-video-wrap video{ width:100%; height:100%; object-fit:cover; display:block; }
+  .scanner-reticle{
+    position:absolute; left:12%; right:12%; top:32%; bottom:32%;
+    border:2px solid var(--ok); border-radius:6px; box-shadow:0 0 0 999px rgba(0,0,0,0.35);
+  }
+  .scanner-hint{
+    position:absolute; left:0; right:0; bottom:12px; text-align:center;
+    color:#fff; font-size:0.8rem; text-shadow:0 1px 3px rgba(0,0,0,0.8);
+  }
+  .scanner-footer{ padding:14px 16px; background:var(--surface); }
+  .scanner-error{ padding:20px 16px; color:#fff; font-size:0.9rem; }
+
   .search-results{ max-height:280px; overflow-y:auto; border:1px solid var(--line); border-radius:5px; background:var(--surface-raised); margin-top:10px; }
   .prod-item{ padding:11px 12px; border-bottom:1px solid var(--line); cursor:pointer; display:flex; justify-content:space-between; gap:10px; }
   .prod-item:last-child{ border-bottom:none; }
@@ -192,6 +228,7 @@ if ('serviceWorker' in navigator) {
 let state = {
   loading: true,
   products: [],
+  posicao: '',
   search: '',
   selectedProduct: null,
   qty: '',
@@ -233,13 +270,14 @@ function beep(freq, durationMs, volume){
     osc.stop(now + durationMs / 1000 + 0.02);
   } catch(err){ /* áudio bloqueado/indisponível — segue sem som */ }
 }
+function beepScan(){ beep(2200, 90, 0.25); }
 function beepOk(){ beep(1400, 90, 0.2); }
 function beepError(){ beep(220, 260, 0.25); }
 
 // ---- Busca ampla de produto (mesma lógica tolerante a acento/ordem do app de contagem) ----
 function normalizeStr(s){
   return String(s)
-    .normalize('NFD').replace(/[̀-ͯ]/g, '')
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, ' ')
     .trim();
@@ -305,10 +343,10 @@ function downloadCsv(filename, headers, rows){
 }
 
 function finalizarEBaixarPlanilha(){
-  const rows = state.log.map(l => [l.sku, l.descricao, l.quantidade]);
+  const rows = state.log.map(l => [l.posicao, l.sku, l.descricao, l.quantidade]);
   const agora = new Date();
   const carimbo = agora.toISOString().slice(0, 16).replace(/[:T]/g, '-');
-  downloadCsv('lancamentos-posicao-' + carimbo + '.csv', ['SKU', 'Descricao', 'Quantidade_kg'], rows);
+  downloadCsv('lancamentos-posicao-' + carimbo + '.csv', ['Posicao', 'SKU', 'Descricao', 'Quantidade_kg'], rows);
   showToast('Planilha baixada com ' + state.log.length + ' lançamento(s).');
 }
 
@@ -320,6 +358,18 @@ function render(){
     c.innerHTML = `<div class="empty"><span class="spinner" style="border-color:rgba(0,0,0,0.12); border-top-color:var(--brand);"></span><br><br>Carregando produtos...</div>`;
     return;
   }
+
+  const posicaoBlock = state.posicao ? `
+    <div class="posicao-active">
+      <div><div class="lbl">Posição ativa</div><div class="val">${escapeHtml(state.posicao)}</div></div>
+      <button type="button" class="clear-sel" id="clear-posicao">✕</button>
+    </div>
+  ` : `
+    <div class="scan-row">
+      <input type="text" id="posicao-input" placeholder="Ex: A-12-03" value="${escapeHtml(state.posicao)}" autocomplete="off">
+      <button type="button" class="scan-btn" id="scan-posicao-btn" title="Escanear QR da posição"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8V6a2 2 0 0 1 2-2h2M4 16v2a2 2 0 0 0 2 2h2M20 8V6a2 2 0 0 0-2-2h-2M20 16v2a2 2 0 0 1-2 2h-2"></path><rect x="9" y="9" width="6" height="6" rx="0.8"></rect></svg></button>
+    </div>
+  `;
 
   let produtoBlock = '';
   if(state.selectedProduct){
@@ -361,7 +411,7 @@ function render(){
               <span class="desc">${escapeHtml(l.descricao)}</span>
               <span class="qty">${l.quantidade} kg</span>
             </div>
-            <div class="meta">SKU ${escapeHtml(l.sku)}</div>
+            <div class="meta">Posição ${escapeHtml(l.posicao)} · SKU ${escapeHtml(l.sku)}</div>
           </div>
         `).join('')}
         <button type="button" class="btn-secondary btn-block" id="finalizar-btn" style="margin-top:12px;">Finalizar e baixar planilha</button>
@@ -371,6 +421,11 @@ function render(){
 
   c.innerHTML = `
     <div class="panel">
+      <div class="f-group">
+        <div class="f-label">Posição</div>
+        ${posicaoBlock}
+      </div>
+
       <div class="f-group">
         <div class="f-label">Produto</div>
         ${produtoBlock}
@@ -394,6 +449,19 @@ function render(){
 }
 
 function attachEvents(){
+  const posicaoInput = document.getElementById('posicao-input');
+  if(posicaoInput){
+    posicaoInput.addEventListener('input', (e) => { state.posicao = e.target.value; });
+    posicaoInput.addEventListener('keydown', (e) => { if(e.key === 'Enter'){ state.posicao = e.target.value.trim(); render(); } });
+  }
+  const scanPosBtn = document.getElementById('scan-posicao-btn');
+  if(scanPosBtn) scanPosBtn.addEventListener('click', () => openScanner(['qr_code'], (value) => {
+    state.posicao = value.trim();
+    render();
+  }));
+  const clearPosicao = document.getElementById('clear-posicao');
+  if(clearPosicao) clearPosicao.addEventListener('click', () => { state.posicao = ''; render(); });
+
   const searchInput = document.getElementById('search-input');
   if(searchInput){
     searchInput.addEventListener('input', (e) => {
@@ -428,6 +496,7 @@ function attachEvents(){
 }
 
 async function doLancar(){
+  if(!state.posicao.trim()){ showToast('Escaneie ou digite a posição.', true); return; }
   if(!state.selectedProduct){ showToast('Selecione um produto.', true); return; }
   const qtyVal = parseFloat(state.qty);
   if(!qtyVal || qtyVal <= 0){ showToast('Informe uma quantidade válida.', true); return; }
@@ -435,6 +504,7 @@ async function doLancar(){
   state.busy = true; render();
   try{
     const payload = {
+      posicao: state.posicao.trim(),
       sku: state.selectedProduct.sku,
       descricao: state.selectedProduct.descricao,
       quantidade: qtyVal
@@ -451,6 +521,74 @@ async function doLancar(){
   state.busy = false;
   render();
   setTimeout(() => { const s = document.getElementById('search-input'); if(s) s.focus(); }, 0);
+}
+
+// ---- Leitor de QR (câmera) para a posição ----
+async function openScanner(formats, onDetected){
+  const backdrop = document.createElement('div');
+  backdrop.className = 'modal-backdrop scanner-modal';
+  backdrop.innerHTML = `<div class="modal"><div id="scanner-body"></div></div>`;
+  document.body.appendChild(backdrop);
+  const body = backdrop.querySelector('#scanner-body');
+
+  let stopped = false;
+  function close(stream){
+    stopped = true;
+    if(stream) stream.getTracks().forEach(t => t.stop());
+    backdrop.remove();
+  }
+  backdrop.addEventListener('click', (e) => { if(e.target === backdrop) close(); });
+
+  if(!('BarcodeDetector' in window)){
+    body.innerHTML = `
+      <div class="scanner-error">Leitor não suportado neste navegador. Digite manualmente.</div>
+      <div class="scanner-footer"><button class="btn-secondary btn-block" id="scanner-close">Fechar</button></div>
+    `;
+    body.querySelector('#scanner-close').addEventListener('click', () => close());
+    return;
+  }
+
+  let stream;
+  try{
+    stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+  } catch(err){
+    body.innerHTML = `
+      <div class="scanner-error">Sem acesso à câmera: ${escapeHtml(err.message)}</div>
+      <div class="scanner-footer"><button class="btn-secondary btn-block" id="scanner-close">Fechar</button></div>
+    `;
+    body.querySelector('#scanner-close').addEventListener('click', () => close());
+    return;
+  }
+
+  body.innerHTML = `
+    <div class="scanner-video-wrap">
+      <video id="scanner-video" autoplay playsinline muted></video>
+      <div class="scanner-reticle"></div>
+      <div class="scanner-hint">Aponte a câmera para o QR code</div>
+    </div>
+    <div class="scanner-footer"><button class="btn-secondary btn-block" id="scanner-close">Cancelar</button></div>
+  `;
+  const video = body.querySelector('#scanner-video');
+  video.srcObject = stream;
+  body.querySelector('#scanner-close').addEventListener('click', () => close(stream));
+
+  const detector = new BarcodeDetector({ formats });
+
+  async function loop(){
+    if(stopped) return;
+    try{
+      const codes = await detector.detect(video);
+      if(codes.length > 0){
+        const value = codes[0].rawValue;
+        beepScan();
+        close(stream);
+        onDetected(value);
+        return;
+      }
+    } catch(err){ /* frame sem código — ignora e tenta o próximo */ }
+    requestAnimationFrame(loop);
+  }
+  requestAnimationFrame(loop);
 }
 
 (async function init(){
