@@ -489,7 +489,33 @@ function showToast(msg, isError){
   t.className = 'toast show' + (isError ? ' error' : '');
   clearTimeout(window._toastTimer);
   window._toastTimer = setTimeout(() => { t.className = 'toast'; }, 2600);
+  if(isError) beepError(); else beepOk();
 }
+
+// ---- Bipe de coletor de dados (gerado via Web Audio, sem arquivo de áudio) ----
+function getAudioCtx(){
+  if(!getAudioCtx._ctx) getAudioCtx._ctx = new (window.AudioContext || window.webkitAudioContext)();
+  if(getAudioCtx._ctx.state === 'suspended') getAudioCtx._ctx.resume();
+  return getAudioCtx._ctx;
+}
+function beep(freq, durationMs, volume){
+  try{
+    const ctx = getAudioCtx();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'square';
+    osc.frequency.value = freq;
+    gain.gain.value = volume;
+    osc.connect(gain).connect(ctx.destination);
+    const now = ctx.currentTime;
+    osc.start(now);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + durationMs / 1000);
+    osc.stop(now + durationMs / 1000 + 0.02);
+  } catch(err){ /* áudio bloqueado/indisponível — segue sem som */ }
+}
+function beepScan(){ beep(2200, 90, 0.25); }
+function beepOk(){ beep(1400, 90, 0.2); }
+function beepError(){ beep(220, 260, 0.25); }
 
 // ---- API calls ----
 async function getProducts(){
@@ -710,6 +736,7 @@ async function openScanner(){
       const codes = await detector.detect(video);
       if(codes.length > 0){
         const value = codes[0].rawValue;
+        beepScan();
         close(stream);
         state.search = value;
         render();
