@@ -1,0 +1,597 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lançamento por Posição</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#05070a">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Estoque WMS">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<style>
+  :root{
+    --shell: #05070a;
+    --shell-dark: #000000;
+    --brand: #2f81f7;
+    --brand-dark: #1f63c4;
+    --bg: #0b0f14;
+    --surface: #131a22;
+    --surface-raised: #1a2330;
+    --ink: #e8edf2;
+    --ink-soft: #8a97a3;
+    --line: #26313c;
+    --ok: #3fb950;
+    --ok-bg: rgba(63,185,80,0.14);
+    --warning: #f0b429;
+    --warning-bg: rgba(240,180,41,0.14);
+    --danger: #f85149;
+    --danger-bg: rgba(248,81,73,0.14);
+    font-size: 16px;
+  }
+  *{ box-sizing:border-box; }
+  html,body{ margin:0; padding:0; }
+  body{
+    background: var(--bg); color: var(--ink);
+    font-family: 'Segoe UI', Roboto, -apple-system, sans-serif;
+    min-height:100vh;
+  }
+
+  .shellbar{
+    background: linear-gradient(180deg, var(--shell), var(--shell-dark));
+    color:#fff; padding:0 16px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.18);
+  }
+  .shellbar-inner{
+    max-width:640px; margin:0 auto;
+    display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between;
+    gap:6px 14px; padding:12px 0;
+  }
+  .brand{ display:flex; align-items:center; gap:8px; font-weight:700; font-size:0.98rem; letter-spacing:0.01em; white-space:nowrap; }
+  .brand-icon{
+    display:inline-flex; align-items:center; justify-content:center;
+    width:22px; height:22px; border-radius:5px; background:var(--brand);
+    font-size:0.8rem; font-weight:800;
+  }
+  .brand-accent{ color:#8fc4ff; font-weight:400; }
+  .shell-nav{ display:flex; gap:4px; flex-wrap:wrap; }
+  .shell-nav a{
+    color:rgba(255,255,255,0.72); text-decoration:none; font-size:0.82rem; font-weight:600;
+    padding:6px 10px; border-radius:4px; transition: background 0.12s ease, color 0.12s ease;
+  }
+  .shell-nav a:hover{ background:rgba(255,255,255,0.08); color:#fff; }
+  .shell-nav a.active{ background:var(--brand); color:#fff; }
+
+  .wrap{ max-width: 640px; width:100%; margin: 0 auto; padding: 20px 12px 60px; }
+
+  h1{ font-size:1.5rem; margin: 0 0 4px; font-weight:700; letter-spacing: -0.01em; color:var(--ink); }
+  .sub{ color:var(--ink-soft); font-size:0.9rem; margin-bottom:18px; }
+
+  .panel{
+    background: var(--surface); border: 1px solid var(--line); border-radius: 6px;
+    padding: 16px; margin-bottom: 14px; box-shadow: 0 1px 3px rgba(29,45,62,0.06);
+  }
+  .section-label{
+    font-size:0.72rem; font-weight:700; text-transform:uppercase; letter-spacing:0.05em;
+    color:var(--brand); margin-bottom:10px; display:flex; align-items:center; gap:6px;
+  }
+  .section-label .n{
+    display:inline-flex; align-items:center; justify-content:center;
+    width:18px; height:18px; border-radius:50%; background:var(--brand); color:#fff;
+    font-size:0.68rem; font-weight:800;
+  }
+
+  button{
+    font-family: inherit; cursor:pointer; border:none;
+    border-radius:5px; font-weight:600; font-size:0.9rem;
+    padding: 10px 16px; transition: background 0.12s ease, transform 0.05s ease;
+  }
+  button:active{ transform: translateY(1px); }
+  .btn-primary{ background: var(--brand); color:#fff; }
+  .btn-primary:hover{ background: var(--brand-dark); }
+  .btn-secondary{ background:var(--surface-raised); color:var(--ink); border:1px solid var(--line); }
+  .btn-secondary:hover{ background:#233040; }
+  .btn-block{ width:100%; }
+  button:disabled{ opacity:0.5; cursor:not-allowed; }
+
+  .field label{ display:block; font-size:0.78rem; color:var(--ink-soft); margin-bottom:5px; font-weight:600; }
+  .field input, .field select{
+    width:100%; padding:10px 12px; border:1px solid var(--line);
+    border-radius:5px; font-size:1rem; background:var(--surface-raised); color:var(--ink);
+  }
+  .field input:focus, .field select:focus{ outline:2px solid var(--brand); outline-offset:-1px; }
+  .field{ margin-bottom:0; }
+  .field-row{ display:flex; gap:10px; }
+  .field-row .field{ flex:1; min-width:0; }
+
+  .scan-row{ display:flex; gap:8px; }
+  .scan-row input{ flex:1; min-width:0; }
+  .scan-btn{
+    display:flex; align-items:center; justify-content:center;
+    background: var(--surface-raised); color:var(--brand); border:1px solid var(--brand);
+    flex-shrink:0; width:46px; font-size:1.2rem; padding:0;
+  }
+
+  .posicao-active{
+    display:flex; justify-content:space-between; align-items:center;
+    background: var(--ok-bg); border:1px solid var(--ok); border-radius:5px;
+    padding: 10px 14px;
+  }
+  .posicao-active .val{ font-family:'Consolas','Courier New', monospace; font-weight:700; color:var(--ok); font-size:1.05rem; }
+  .posicao-active .lbl{ font-size:0.7rem; color:var(--ink-soft); text-transform:uppercase; letter-spacing:0.04em; }
+
+  .search-results{ max-height:240px; overflow-y:auto; border:1px solid var(--line); border-radius:5px; background:var(--surface-raised); margin-top:10px; }
+  .prod-item{ padding:11px 12px; border-bottom:1px solid var(--line); cursor:pointer; display:flex; justify-content:space-between; gap:10px; }
+  .prod-item:last-child{ border-bottom:none; }
+  .prod-item:hover{ background: #233040; }
+  .prod-sku{ font-family:'Consolas', 'Courier New', monospace; font-weight:700; font-size:0.82rem; color:var(--ok); white-space:nowrap; }
+  .prod-desc{ font-size:0.88rem; color:var(--ink-soft); text-align:right; }
+
+  .selected-product{
+    display:flex; justify-content:space-between; align-items:center;
+    background: var(--surface-raised); border:1px solid var(--brand); border-radius:5px;
+    padding: 12px 14px;
+  }
+  .selected-product .name{ font-weight:700; }
+  .selected-product .sku{ font-family:'Consolas', 'Courier New', monospace; font-size:0.8rem; color:var(--ink-soft); }
+  .clear-sel{ background:none; border:none; color:var(--ink-soft); font-size:1.2rem; padding:0 4px; }
+
+  .qty-readout{
+    background:#04140a; border:1px solid var(--ok); border-radius:6px;
+    padding:14px 16px; display:flex; align-items:center; justify-content:space-between;
+  }
+  .qty-readout input{
+    font-family:'Consolas','Courier New', monospace; font-size:2.1rem; font-weight:700;
+    color:var(--ok); background:transparent; border:none; width:100%; padding:0;
+    text-shadow: 0 0 10px rgba(63,185,80,0.5); letter-spacing:0.02em;
+  }
+  .qty-readout input:focus{ outline:none; }
+  .qty-readout .unit{ color:var(--ink-soft); font-size:0.85rem; text-transform:uppercase; letter-spacing:0.05em; font-weight:600; }
+
+  .log{ margin-top:18px; }
+  .log h3{ font-size:0.72rem; text-transform:uppercase; letter-spacing:0.05em; color:var(--ink-soft); margin-bottom:8px; font-weight:700; }
+  .log-item{ padding:10px 0; border-bottom:1px solid var(--line); font-size:0.88rem; }
+  .log-item .top{ display:flex; justify-content:space-between; gap:10px; }
+  .log-item .desc{ font-weight:600; }
+  .log-item .qty{ font-weight:700; color:var(--ok); white-space:nowrap; }
+  .log-item .meta{ font-size:0.76rem; color:var(--ink-soft); margin-top:2px; }
+
+  .toast{
+    position:fixed; left:50%; bottom:24px; transform:translateX(-50%);
+    background:var(--surface-raised); color:var(--ink); border:1px solid var(--line);
+    padding:12px 20px; border-radius:5px;
+    font-size:0.9rem; opacity:0; pointer-events:none; transition:opacity 0.2s ease, transform 0.2s ease;
+    max-width:90vw; text-align:center; box-shadow:0 4px 14px rgba(0,0,0,0.4);
+  }
+  .toast.show{ opacity:1; transform:translateX(-50%) translateY(-6px); }
+  .toast.error{ background: var(--danger); }
+
+  .empty{ text-align:center; color:var(--ink-soft); padding:16px 10px; font-size:0.88rem; }
+  .spinner{
+    width:16px; height:16px; border:2px solid rgba(255,255,255,0.35);
+    border-top-color:#fff; border-radius:50%; display:inline-block;
+    animation: spin 0.7s linear infinite; vertical-align:middle;
+  }
+  @keyframes spin{ to{ transform:rotate(360deg); } }
+
+  .modal-backdrop{
+    position:fixed; inset:0; background:rgba(15,25,35,0.55);
+    display:flex; align-items:center; justify-content:center; padding:20px; z-index:50;
+  }
+  .modal{ background:var(--surface); border-radius:8px; padding:22px; max-width:380px; width:100%; box-shadow:0 12px 40px rgba(0,0,0,0.25); }
+  .scanner-modal .modal{ max-width:480px; padding:0; overflow:hidden; background:#000; }
+  .scanner-video-wrap{ position:relative; width:100%; aspect-ratio: 3/4; background:#000; }
+  .scanner-video-wrap video{ width:100%; height:100%; object-fit:cover; display:block; }
+  .scanner-reticle{
+    position:absolute; left:12%; right:12%; top:32%; bottom:32%;
+    border:2px solid var(--ok); border-radius:6px; box-shadow:0 0 0 999px rgba(0,0,0,0.35);
+  }
+  .scanner-hint{
+    position:absolute; left:0; right:0; bottom:12px; text-align:center;
+    color:#fff; font-size:0.8rem; text-shadow:0 1px 3px rgba(0,0,0,0.8);
+  }
+  .scanner-footer{ padding:14px 16px; background:var(--surface); }
+  .scanner-error{ padding:20px 16px; color:var(--ink); font-size:0.9rem; }
+
+  @media (max-width: 420px){
+    .field-row{ flex-direction:column; gap:14px; }
+    .prod-item{ flex-direction:column; align-items:flex-start; gap:2px; }
+    .prod-desc{ text-align:left; }
+  }
+</style>
+</head>
+<body>
+<header class="shellbar">
+  <div class="shellbar-inner">
+    <div class="brand"><span class="brand-icon">E</span>Estoque<span class="brand-accent">WMS</span></div>
+    <nav class="shell-nav">
+      <a href="index.html">Contagem</a>
+      <a href="posicao.html" class="active">Posição</a>
+      <a href="resultados.html">Resultados</a>
+      <a href="admin.html">Admin</a>
+    </nav>
+  </div>
+</header>
+<main class="wrap">
+  <h1>Lançamento por posição</h1>
+  <div class="sub">Escaneie o QR code da posição, informe o produto, lote, fabricação/validade e a quantidade.</div>
+  <div id="content"></div>
+</main>
+<div class="toast" id="toast"></div>
+
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => navigator.serviceWorker.register('sw.js'));
+}
+</script>
+<script>
+let state = {
+  loading: true,
+  products: [],
+  posicao: '',
+  search: '',
+  selectedProduct: null,
+  lote: '',
+  fabricacao: '',
+  validade: '',
+  qty: '',
+  busy: false,
+  log: []
+};
+
+function escapeHtml(s){
+  return String(s == null ? '' : s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+}
+
+function showToast(msg, isError){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show' + (isError ? ' error' : '');
+  clearTimeout(window._toastTimer);
+  window._toastTimer = setTimeout(() => { t.className = 'toast'; }, 2600);
+}
+
+// ---- Busca ampla de produto (mesma lógica tolerante a acento/ordem do app de contagem) ----
+function normalizeStr(s){
+  return String(s)
+    .normalize('NFD').replace(/[̀-ͯ]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim();
+}
+
+function searchProducts(query, products){
+  const qNorm = normalizeStr(query);
+  if(!qNorm) return [];
+  const tokens = qNorm.split(' ').filter(Boolean);
+  const scored = [];
+  for(const p of products){
+    const skuNorm = normalizeStr(p.sku);
+    const descNorm = normalizeStr(p.descricao);
+    const haystack = skuNorm + ' ' + descNorm;
+    let allTokensMatch = true;
+    let score = 0;
+    for(const t of tokens){
+      const idx = haystack.indexOf(t);
+      if(idx === -1){ allTokensMatch = false; break; }
+      score += idx;
+    }
+    if(!allTokensMatch) continue;
+    if(skuNorm === qNorm || descNorm === qNorm) score -= 10000;
+    else if(skuNorm.startsWith(qNorm) || descNorm.startsWith(qNorm)) score -= 5000;
+    scored.push({ p, score });
+  }
+  scored.sort((a, b) => a.score - b.score);
+  return scored.slice(0, 40).map(s => s.p);
+}
+
+async function getProducts(){
+  const res = await fetch('/api/products');
+  const data = await res.json();
+  if(data.error) throw new Error(data.error);
+  return data;
+}
+
+async function lancarPosicao(payload){
+  const res = await fetch('/api/posicao', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  });
+  const data = await res.json();
+  if(data.error) throw new Error(data.error);
+  return data;
+}
+
+function render(){
+  const c = document.getElementById('content');
+  if(state.loading){
+    c.innerHTML = `<div class="empty"><span class="spinner" style="border-color:rgba(255,255,255,0.15); border-top-color:var(--brand);"></span><br><br>Carregando produtos...</div>`;
+    return;
+  }
+
+  const posicaoBlock = state.posicao ? `
+    <div class="posicao-active">
+      <div><div class="lbl">Posição ativa</div><div class="val">${escapeHtml(state.posicao)}</div></div>
+      <button type="button" class="clear-sel" id="clear-posicao">✕</button>
+    </div>
+  ` : `
+    <div class="scan-row">
+      <input type="text" id="posicao-input" placeholder="Ex: A-12-03" value="${escapeHtml(state.posicao)}" autocomplete="off">
+      <button type="button" class="scan-btn" id="scan-posicao-btn" title="Escanear QR da posição">📷</button>
+    </div>
+  `;
+
+  let produtoBlock = '';
+  if(state.selectedProduct){
+    produtoBlock = `
+      <div class="selected-product">
+        <div>
+          <div class="name">${escapeHtml(state.selectedProduct.descricao)}</div>
+          <div class="sku">${escapeHtml(state.selectedProduct.sku)}</div>
+        </div>
+        <button type="button" class="clear-sel" id="clear-produto">✕</button>
+      </div>
+    `;
+  } else {
+    const filtered = state.search.trim() === '' ? [] : searchProducts(state.search, state.products);
+    produtoBlock = `
+      <input type="text" id="search-input" placeholder="Código (SKU) ou nome do produto" value="${escapeHtml(state.search)}" autocomplete="off">
+      <div class="search-results">
+        ${ state.search.trim() === '' ? `<div class="empty">Digite para buscar um produto.</div>`
+          : filtered.length === 0 ? `<div class="empty">Nenhum produto encontrado.</div>`
+          : filtered.map(p => `
+              <div class="prod-item" data-sku="${escapeHtml(p.sku)}">
+                <span class="prod-sku">${escapeHtml(p.sku)}</span>
+                <span class="prod-desc">${escapeHtml(p.descricao)}</span>
+              </div>
+            `).join('')
+        }
+      </div>
+    `;
+  }
+
+  let logBlock = '';
+  if(state.log.length > 0){
+    logBlock = `
+      <div class="log">
+        <h3>LANÇAMENTOS NESTA SESSÃO</h3>
+        ${state.log.slice().reverse().map(l => `
+          <div class="log-item">
+            <div class="top">
+              <span class="desc">${escapeHtml(l.descricao)}</span>
+              <span class="qty">${l.quantidade} kg</span>
+            </div>
+            <div class="meta">
+              Posição ${escapeHtml(l.posicao)} · SKU ${escapeHtml(l.sku)}${l.lote ? ' · Lote ' + escapeHtml(l.lote) : ''}${l.validade ? ' · Validade ' + escapeHtml(l.validade) : ''}
+            </div>
+          </div>
+        `).join('')}
+      </div>
+    `;
+  }
+
+  c.innerHTML = `
+    <div class="panel">
+      <div class="section-label"><span class="n">1</span> Posição (leitura de QR)</div>
+      ${posicaoBlock}
+    </div>
+
+    <div class="panel">
+      <div class="section-label"><span class="n">2</span> Produto (código ou nome)</div>
+      ${produtoBlock}
+    </div>
+
+    <div class="panel">
+      <div class="section-label"><span class="n">3</span> Lote</div>
+      <div class="field">
+        <input type="text" id="lote-input" placeholder="Número do lote (opcional)" value="${escapeHtml(state.lote)}">
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="section-label"><span class="n">4</span> Fabricação e validade</div>
+      <div class="field-row">
+        <div class="field">
+          <label>Fabricação</label>
+          <input type="date" id="fab-input" value="${escapeHtml(state.fabricacao)}">
+        </div>
+        <div class="field">
+          <label>Validade</label>
+          <input type="date" id="val-input" value="${escapeHtml(state.validade)}">
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="section-label"><span class="n">5</span> Quantidade</div>
+      <div class="qty-readout">
+        <input type="number" inputmode="decimal" step="any" min="0" id="qty-input" placeholder="0.0" value="${escapeHtml(state.qty)}">
+        <div class="unit">kg</div>
+      </div>
+    </div>
+
+    <button class="btn-primary btn-block" id="lancar-btn" ${state.busy ? 'disabled' : ''}>
+      ${state.busy ? '<span class="spinner"></span>' : 'Lançar'}
+    </button>
+    ${logBlock}
+  `;
+  attachEvents();
+}
+
+function attachEvents(){
+  const posicaoInput = document.getElementById('posicao-input');
+  if(posicaoInput){
+    posicaoInput.addEventListener('input', (e) => { state.posicao = e.target.value; });
+    posicaoInput.addEventListener('keydown', (e) => { if(e.key === 'Enter'){ state.posicao = e.target.value.trim(); render(); } });
+  }
+  const scanPosBtn = document.getElementById('scan-posicao-btn');
+  if(scanPosBtn) scanPosBtn.addEventListener('click', () => openScanner(['qr_code'], (value) => {
+    state.posicao = value.trim();
+    render();
+  }));
+  const clearPosicao = document.getElementById('clear-posicao');
+  if(clearPosicao) clearPosicao.addEventListener('click', () => { state.posicao = ''; render(); });
+
+  const searchInput = document.getElementById('search-input');
+  if(searchInput){
+    searchInput.addEventListener('input', (e) => {
+      state.search = e.target.value;
+      render();
+      const el = document.getElementById('search-input');
+      if(el){ el.focus(); el.selectionStart = el.selectionEnd = el.value.length; }
+    });
+    document.querySelectorAll('.prod-item').forEach(item => {
+      item.addEventListener('click', () => {
+        const sku = item.dataset.sku;
+        state.selectedProduct = state.products.find(p => p.sku === sku);
+        render();
+      });
+    });
+  }
+  const clearProduto = document.getElementById('clear-produto');
+  if(clearProduto) clearProduto.addEventListener('click', () => { state.selectedProduct = null; state.search = ''; render(); });
+
+  const loteInput = document.getElementById('lote-input');
+  if(loteInput) loteInput.addEventListener('input', (e) => { state.lote = e.target.value; });
+
+  const fabInput = document.getElementById('fab-input');
+  if(fabInput) fabInput.addEventListener('input', (e) => { state.fabricacao = e.target.value; });
+
+  const valInput = document.getElementById('val-input');
+  if(valInput) valInput.addEventListener('input', (e) => { state.validade = e.target.value; });
+
+  const qtyInput = document.getElementById('qty-input');
+  if(qtyInput){
+    qtyInput.addEventListener('input', (e) => { state.qty = e.target.value; });
+    qtyInput.addEventListener('keydown', (e) => { if(e.key === 'Enter') doLancar(); });
+  }
+
+  const lancarBtn = document.getElementById('lancar-btn');
+  if(lancarBtn) lancarBtn.addEventListener('click', doLancar);
+}
+
+async function doLancar(){
+  if(!state.posicao.trim()){ showToast('Escaneie ou digite a posição.', true); return; }
+  if(!state.selectedProduct){ showToast('Selecione um produto.', true); return; }
+  const qtyVal = parseFloat(state.qty);
+  if(!qtyVal || qtyVal <= 0){ showToast('Informe uma quantidade válida.', true); return; }
+
+  state.busy = true; render();
+  try{
+    const payload = {
+      posicao: state.posicao.trim(),
+      sku: state.selectedProduct.sku,
+      descricao: state.selectedProduct.descricao,
+      lote: state.lote.trim() || null,
+      fabricacao: state.fabricacao || null,
+      validade: state.validade || null,
+      quantidade: qtyVal
+    };
+    await lancarPosicao(payload);
+    state.log.push(payload);
+    showToast('Lançado: ' + qtyVal + ' kg — ' + state.selectedProduct.descricao);
+    state.selectedProduct = null;
+    state.search = '';
+    state.lote = '';
+    state.fabricacao = '';
+    state.validade = '';
+    state.qty = '';
+  } catch(err){
+    showToast('Erro ao lançar: ' + err.message, true);
+  }
+  state.busy = false;
+  render();
+  setTimeout(() => { const s = document.getElementById('search-input'); if(s) s.focus(); }, 0);
+}
+
+// ---- Leitor de código (QR/barras) pela câmera — genérico, usado tanto
+// para a posição quanto reaproveitável para produto se precisar no futuro ----
+async function openScanner(formats, onDetected){
+  const backdrop = document.createElement('div');
+  backdrop.className = 'modal-backdrop scanner-modal';
+  backdrop.innerHTML = `<div class="modal"><div id="scanner-body"></div></div>`;
+  document.body.appendChild(backdrop);
+  const body = backdrop.querySelector('#scanner-body');
+
+  let stopped = false;
+  function close(stream){
+    stopped = true;
+    if(stream) stream.getTracks().forEach(t => t.stop());
+    backdrop.remove();
+  }
+  backdrop.addEventListener('click', (e) => { if(e.target === backdrop) close(); });
+
+  if(!('BarcodeDetector' in window)){
+    body.innerHTML = `
+      <div class="scanner-error">
+        <strong>Leitor de código não é suportado neste navegador.</strong><br><br>
+        Digite o valor manualmente no campo.
+      </div>
+      <div class="scanner-footer"><button class="btn-secondary btn-block" id="scanner-close">Fechar</button></div>
+    `;
+    body.querySelector('#scanner-close').addEventListener('click', () => close());
+    return;
+  }
+
+  let stream;
+  try{
+    stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+  } catch(err){
+    body.innerHTML = `
+      <div class="scanner-error">
+        <strong>Não foi possível acessar a câmera.</strong><br><br>
+        ${escapeHtml(err.message)}<br><br>
+        Verifique se a permissão de câmera está liberada para o site.
+      </div>
+      <div class="scanner-footer"><button class="btn-secondary btn-block" id="scanner-close">Fechar</button></div>
+    `;
+    body.querySelector('#scanner-close').addEventListener('click', () => close());
+    return;
+  }
+
+  body.innerHTML = `
+    <div class="scanner-video-wrap">
+      <video id="scanner-video" autoplay playsinline muted></video>
+      <div class="scanner-reticle"></div>
+      <div class="scanner-hint">Aponte a câmera para o QR code</div>
+    </div>
+    <div class="scanner-footer"><button class="btn-secondary btn-block" id="scanner-close">Cancelar</button></div>
+  `;
+  const video = body.querySelector('#scanner-video');
+  video.srcObject = stream;
+  body.querySelector('#scanner-close').addEventListener('click', () => close(stream));
+
+  const detector = new BarcodeDetector({ formats });
+
+  async function loop(){
+    if(stopped) return;
+    try{
+      const codes = await detector.detect(video);
+      if(codes.length > 0){
+        const value = codes[0].rawValue;
+        close(stream);
+        onDetected(value);
+        return;
+      }
+    } catch(err){ /* frame sem código — ignora e tenta o próximo */ }
+    requestAnimationFrame(loop);
+  }
+  requestAnimationFrame(loop);
+}
+
+(async function init(){
+  try{
+    const data = await getProducts();
+    state.products = data.products;
+  } catch(err){
+    showToast('Erro ao carregar produtos: ' + err.message, true);
+  }
+  state.loading = false;
+  render();
+})();
+</script>
+</body>
+</html>

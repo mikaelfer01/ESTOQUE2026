@@ -115,6 +115,14 @@
   .status-aberta{ background:var(--warning-bg); color:var(--warning); }
   .status-finalizada{ background:var(--ok-bg); color:var(--ok); }
 
+  .tabs{ display:flex; gap:6px; margin-bottom:16px; border-bottom:1px solid var(--line); }
+  .tab-btn{
+    background:none; border:none; color:var(--ink-soft); font-weight:600; font-size:0.88rem;
+    padding:10px 4px; border-bottom:2px solid transparent; border-radius:0; margin-bottom:-1px;
+  }
+  .tab-btn.active{ color:var(--brand-dark); border-bottom-color:var(--brand); }
+  .tab-panel[hidden]{ display:none; }
+
   .empty{ text-align:center; color:var(--ink-soft); padding:30px 10px; font-size:0.9rem; }
   .spinner{
     width:16px; height:16px; border:2px solid rgba(0,0,0,0.15);
@@ -157,6 +165,7 @@
     <div class="brand"><span class="brand-icon">E</span>Estoque<span class="brand-accent">WMS</span></div>
     <nav class="shell-nav">
       <a href="index.html">Contagem</a>
+      <a href="posicao.html">Posição</a>
       <a href="resultados.html" class="active">Resultados</a>
       <a href="admin.html">Admin</a>
     </nav>
@@ -164,60 +173,115 @@
 </header>
 <div class="wrap">
   <div class="eyebrow">Relatórios</div>
-  <h1>Resultados das contagens</h1>
-  <div class="sub">Filtre por período, sessão, status ou produto para visualizar os lançamentos.</div>
+  <h1>Resultados</h1>
+  <div class="sub">Filtre por período, sessão/posição, status ou produto para visualizar os lançamentos.</div>
 
-  <div class="filters">
-    <div class="field">
-      <label>De (data início)</label>
-      <input type="date" id="f-from">
+  <div class="tabs">
+    <button type="button" class="tab-btn active" id="tab-sessao">Contagem por sessão</button>
+    <button type="button" class="tab-btn" id="tab-posicao">Lançamentos por posição</button>
+  </div>
+
+  <div class="tab-panel" id="view-sessao">
+    <div class="filters">
+      <div class="field">
+        <label>De (data início)</label>
+        <input type="date" id="f-from">
+      </div>
+      <div class="field">
+        <label>Até (data início)</label>
+        <input type="date" id="f-to">
+      </div>
+      <div class="field">
+        <label>Sessão</label>
+        <select id="f-session"><option value="">Todas</option></select>
+      </div>
+      <div class="field">
+        <label>Status</label>
+        <select id="f-status">
+          <option value="">Todos</option>
+          <option value="aberta">Aberta</option>
+          <option value="finalizada">Finalizada</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Buscar (SKU ou descrição)</label>
+        <input type="text" id="f-q" placeholder="Ex: 4521 ou parafuso">
+      </div>
+      <div class="actions">
+        <button class="btn-primary" id="btn-filter">Filtrar</button>
+        <button class="btn-secondary" id="btn-clear">Limpar</button>
+        <button class="btn-secondary" id="btn-csv">Exportar CSV</button>
+      </div>
     </div>
-    <div class="field">
-      <label>Até (data início)</label>
-      <input type="date" id="f-to">
-    </div>
-    <div class="field">
-      <label>Sessão</label>
-      <select id="f-session"><option value="">Todas</option></select>
-    </div>
-    <div class="field">
-      <label>Status</label>
-      <select id="f-status">
-        <option value="">Todos</option>
-        <option value="aberta">Aberta</option>
-        <option value="finalizada">Finalizada</option>
-      </select>
-    </div>
-    <div class="field">
-      <label>Buscar (SKU ou descrição)</label>
-      <input type="text" id="f-q" placeholder="Ex: 4521 ou parafuso">
-    </div>
-    <div class="actions">
-      <button class="btn-primary" id="btn-filter">Filtrar</button>
-      <button class="btn-secondary" id="btn-clear">Limpar</button>
-      <button class="btn-secondary" id="btn-csv">Exportar CSV</button>
+
+    <div class="summary" id="summary"></div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Sessão</th>
+            <th>Status</th>
+            <th>Início</th>
+            <th>SKU</th>
+            <th>Descrição</th>
+            <th>Quantidade (kg)</th>
+            <th>Atualizado em</th>
+          </tr>
+        </thead>
+        <tbody id="tbody">
+          <tr><td class="empty-cell" colspan="7"><div class="empty"><span class="spinner"></span> Carregando...</div></td></tr>
+        </tbody>
+      </table>
     </div>
   </div>
 
-  <div class="summary" id="summary"></div>
+  <div class="tab-panel" id="view-posicao" hidden>
+    <div class="filters">
+      <div class="field">
+        <label>De (data lançamento)</label>
+        <input type="date" id="p-from">
+      </div>
+      <div class="field">
+        <label>Até (data lançamento)</label>
+        <input type="date" id="p-to">
+      </div>
+      <div class="field">
+        <label>Posição</label>
+        <input type="text" id="p-posicao" placeholder="Ex: A-12-03">
+      </div>
+      <div class="field">
+        <label>Buscar (SKU, descrição ou lote)</label>
+        <input type="text" id="p-q" placeholder="Ex: 4521, parafuso ou L2024">
+      </div>
+      <div class="actions">
+        <button class="btn-primary" id="btn-p-filter">Filtrar</button>
+        <button class="btn-secondary" id="btn-p-clear">Limpar</button>
+        <button class="btn-secondary" id="btn-p-csv">Exportar CSV</button>
+      </div>
+    </div>
 
-  <div class="table-wrap">
-    <table>
-      <thead>
-        <tr>
-          <th>Sessão</th>
-          <th>Status</th>
-          <th>Início</th>
-          <th>SKU</th>
-          <th>Descrição</th>
-          <th>Quantidade (kg)</th>
-          <th>Atualizado em</th>
-        </tr>
-      </thead>
-      <tbody id="tbody">
-        <tr><td class="empty-cell" colspan="7"><div class="empty"><span class="spinner"></span> Carregando...</div></td></tr>
-      </tbody>
-    </table>
+    <div class="summary" id="p-summary"></div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Posição</th>
+            <th>SKU</th>
+            <th>Descrição</th>
+            <th>Lote</th>
+            <th>Fabricação</th>
+            <th>Validade</th>
+            <th>Quantidade (kg)</th>
+            <th>Lançado em</th>
+          </tr>
+        </thead>
+        <tbody id="p-tbody">
+          <tr><td class="empty-cell" colspan="8"><div class="empty"><span class="spinner"></span> Carregando...</div></td></tr>
+        </tbody>
+      </table>
+    </div>
   </div>
 </div>
 
@@ -345,6 +409,123 @@ document.getElementById('btn-clear').addEventListener('click', () => {
 });
 document.getElementById('btn-csv').addEventListener('click', exportCsv);
 document.getElementById('f-q').addEventListener('keydown', (e) => { if(e.key === 'Enter') load(); });
+
+// ---- Aba "Lançamentos por posição" ----
+let lastPosicaoResults = [];
+let posicaoLoadedOnce = false;
+
+function fmtDateOnly(iso){
+  if(!iso) return '';
+  const d = new Date(iso + 'T00:00:00');
+  return new Intl.DateTimeFormat('pt-BR', { timeZone: 'America/Sao_Paulo', day:'2-digit', month:'2-digit', year:'numeric' }).format(d);
+}
+
+function buildPosicaoQuery(){
+  const params = new URLSearchParams();
+  const from = document.getElementById('p-from').value;
+  const to = document.getElementById('p-to').value;
+  const posicao = document.getElementById('p-posicao').value.trim();
+  const q = document.getElementById('p-q').value.trim();
+  if(from) params.set('from', from + 'T00:00:00');
+  if(to) params.set('to', to + 'T23:59:59');
+  if(posicao) params.set('posicao', posicao);
+  if(q) params.set('q', q);
+  return params.toString();
+}
+
+function renderPosicaoSummary(rows){
+  const totalQtd = rows.reduce((acc, r) => acc + Number(r.quantidade || 0), 0);
+  const posicoes = new Set(rows.map(r => r.posicao));
+  const skus = new Set(rows.map(r => r.sku));
+  document.getElementById('p-summary').innerHTML = `
+    <div class="stat"><div class="num">${rows.length}</div><div class="lbl">Lançamentos</div></div>
+    <div class="stat"><div class="num">${totalQtd.toLocaleString('pt-BR', {maximumFractionDigits:2})}</div><div class="lbl">Total (kg)</div></div>
+    <div class="stat"><div class="num">${posicoes.size}</div><div class="lbl">Posições</div></div>
+    <div class="stat"><div class="num">${skus.size}</div><div class="lbl">Produtos distintos</div></div>
+  `;
+}
+
+function renderPosicaoTable(rows){
+  const tbody = document.getElementById('p-tbody');
+  if(rows.length === 0){
+    tbody.innerHTML = `<tr><td class="empty-cell" colspan="8"><div class="empty">Nenhum lançamento encontrado para esse filtro.</div></td></tr>`;
+    return;
+  }
+  tbody.innerHTML = rows.map(r => `
+    <tr>
+      <td class="mono" data-label="Posição">${escapeHtml(r.posicao)}</td>
+      <td class="mono" data-label="SKU">${escapeHtml(r.sku)}</td>
+      <td data-label="Descrição">${escapeHtml(r.descricao)}</td>
+      <td data-label="Lote">${escapeHtml(r.lote || '—')}</td>
+      <td data-label="Fabricação">${r.fabricacao ? fmtDateOnly(r.fabricacao) : '—'}</td>
+      <td data-label="Validade">${r.validade ? fmtDateOnly(r.validade) : '—'}</td>
+      <td class="mono" data-label="Quantidade (kg)">${Number(r.quantidade).toLocaleString('pt-BR', {maximumFractionDigits:2})}</td>
+      <td data-label="Lançado em">${fmtDate(r.criado_em)}</td>
+    </tr>
+  `).join('');
+}
+
+async function loadPosicao(){
+  document.getElementById('p-tbody').innerHTML = `<tr><td class="empty-cell" colspan="8"><div class="empty"><span class="spinner"></span> Carregando...</div></td></tr>`;
+  try{
+    const qs = buildPosicaoQuery();
+    const res = await fetch('/api/posicao' + (qs ? '?' + qs : ''));
+    const data = await res.json();
+    if(data.error) throw new Error(data.error);
+    lastPosicaoResults = data.lancamentos;
+    renderPosicaoSummary(data.lancamentos);
+    renderPosicaoTable(data.lancamentos);
+  } catch(err){
+    document.getElementById('p-tbody').innerHTML = `<tr><td class="empty-cell" colspan="8"><div class="empty">Erro ao carregar: ${escapeHtml(err.message)}</div></td></tr>`;
+  }
+}
+
+function exportPosicaoCsv(){
+  if(lastPosicaoResults.length === 0) return;
+  const header = ['Posicao','SKU','Descricao','Lote','Fabricacao','Validade','Quantidade_kg','Lancado_em'];
+  const lines = [header.join(';')];
+  lastPosicaoResults.forEach(r => {
+    lines.push([
+      r.posicao, r.sku, (r.descricao || '').replace(/;/g, ','), r.lote || '',
+      r.fabricacao ? fmtDateOnly(r.fabricacao) : '', r.validade ? fmtDateOnly(r.validade) : '',
+      String(r.quantidade).replace('.', ','), fmtDate(r.criado_em)
+    ].map(v => `"${String(v).replace(/"/g,'""')}"`).join(';'));
+  });
+  const blob = new Blob(['﻿' + lines.join('\n')], { type: 'text/csv;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'lancamentos-por-posicao.csv';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+document.getElementById('btn-p-filter').addEventListener('click', loadPosicao);
+document.getElementById('btn-p-clear').addEventListener('click', () => {
+  document.getElementById('p-from').value = '';
+  document.getElementById('p-to').value = '';
+  document.getElementById('p-posicao').value = '';
+  document.getElementById('p-q').value = '';
+  loadPosicao();
+});
+document.getElementById('btn-p-csv').addEventListener('click', exportPosicaoCsv);
+document.getElementById('p-q').addEventListener('keydown', (e) => { if(e.key === 'Enter') loadPosicao(); });
+
+document.getElementById('tab-sessao').addEventListener('click', () => {
+  document.getElementById('tab-sessao').classList.add('active');
+  document.getElementById('tab-posicao').classList.remove('active');
+  document.getElementById('view-sessao').hidden = false;
+  document.getElementById('view-posicao').hidden = true;
+});
+document.getElementById('tab-posicao').addEventListener('click', () => {
+  document.getElementById('tab-posicao').classList.add('active');
+  document.getElementById('tab-sessao').classList.remove('active');
+  document.getElementById('view-posicao').hidden = false;
+  document.getElementById('view-sessao').hidden = true;
+  if(!posicaoLoadedOnce){ posicaoLoadedOnce = true; loadPosicao(); }
+});
 
 load();
 </script>

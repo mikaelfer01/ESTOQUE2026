@@ -5,9 +5,10 @@ App simples para contagem física de estoque por posição. Backend 100% na Verc
 ## Estrutura do projeto
 
 ```
-├── index.html          → app de contagem (uso do dia a dia)
+├── index.html          → app de contagem por sessão (uso do dia a dia)
+├── posicao.html         → lançamento por posição: QR da posição + produto + lote + fabricação/validade + quantidade
 ├── admin.html          → carrega a lista de produtos (SKU + descrição) no banco
-├── resultados.html      → visualiza os lançamentos, com filtros por data/sessão/produto
+├── resultados.html      → visualiza os lançamentos, com filtros por data/sessão/produto (abas: por sessão / por posição)
 ├── data/
 │   └── produtos.json   → sua lista de produtos (SKU + descrição)
 ├── manifest.json         → deixa o site instalável como app (PWA) no celular
@@ -20,7 +21,8 @@ App simples para contagem física de estoque por posição. Backend 100% na Verc
     ├── sessions.js        → GET sessões abertas / POST inicia uma nova
     ├── sessions/[id]/finish.js → POST finaliza uma sessão
     ├── counts.js          → POST lança uma quantidade contada
-    └── results.js         → GET resultados com filtros (data, sessão, status, busca)
+    ├── results.js         → GET resultados com filtros (data, sessão, status, busca)
+    └── posicao.js         → GET/POST lançamentos por posição (posição, produto, lote, fabricação/validade, quantidade)
 ```
 
 ## Como os dados ficam organizados
@@ -28,6 +30,19 @@ App simples para contagem física de estoque por posição. Backend 100% na Verc
 - **`produtos`**: `sku`, `descricao` — lista mestre de produtos.
 - **`sessoes`**: uma contagem (rodada) que pode estar `aberta` ou `finalizada`, com data de início/fim. Várias pessoas podem entrar na mesma sessão aberta ao mesmo tempo.
 - **`contagens`**: cada lançamento — sessão + SKU + quantidade acumulada (repetir o lançamento do mesmo produto na mesma sessão soma automaticamente, feito com `ON CONFLICT` no banco).
+- **`lancamentos_posicao`**: um registro por lançamento feito na aba **Posição** — posição (lida por QR ou digitada), SKU, descrição, lote, fabricação, validade e quantidade. Cada lançamento é uma linha independente (sem sessão/acúmulo), pensado para conferência de posição a posição.
+
+## Aba "Posição" (`posicao.html`)
+
+Fluxo pensado para coletor de dados, na ordem pedida:
+
+1. **Posição** — escaneie o QR code fixado na posição (câmera + `BarcodeDetector`, formato `qr_code`) ou digite manualmente.
+2. **Produto** — busca ampla por código (SKU) ou nome, tolerante a acento/ordem das palavras (mesma busca do app de contagem).
+3. **Lote**.
+4. **Fabricação e validade** — dois campos de data.
+5. **Quantidade** (kg).
+
+Cada "Lançar" grava uma linha em `lancamentos_posicao` via `POST /api/posicao` e mantém a posição ativa na tela para lançar o próximo produto sem escanear de novo. O histórico fica visível na aba **Resultados**, em "Lançamentos por posição".
 
 ## Passo a passo — configurar o banco (Vercel Postgres)
 
