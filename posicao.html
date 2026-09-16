@@ -453,9 +453,9 @@ function render(){
     </div>
 
     <div class="panel">
-      <div class="section-label"><span class="n">3</span> Lote</div>
+      <div class="section-label"><span class="n">3</span> Lote *</div>
       <div class="field">
-        <input type="text" id="lote-input" placeholder="Número do lote (opcional)" value="${escapeHtml(state.lote)}">
+        <input type="text" id="lote-input" placeholder="Número do lote" value="${escapeHtml(state.lote)}" required>
       </div>
     </div>
 
@@ -553,6 +553,7 @@ function attachEvents(){
 async function doLancar(){
   if(!state.posicao.trim()){ showToast('Escaneie ou digite a posição.', true); return; }
   if(!state.selectedProduct){ showToast('Selecione um produto.', true); return; }
+  if(!state.lote.trim()){ showToast('Informe o lote.', true); return; }
   const qtyVal = parseFloat(state.qty);
   if(!qtyVal || qtyVal <= 0){ showToast('Informe uma quantidade válida.', true); return; }
 

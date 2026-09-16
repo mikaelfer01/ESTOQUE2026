@@ -38,13 +38,16 @@ export default async function handler(req, res) {
       if (!sku || !descricao) {
         return res.status(400).json({ error: 'Selecione um produto.' });
       }
+      if (!lote || !String(lote).trim()) {
+        return res.status(400).json({ error: 'Informe o lote.' });
+      }
       if (!(qtdNum > 0)) {
         return res.status(400).json({ error: 'Informe uma quantidade válida.' });
       }
 
       const { rows } = await sql`
         INSERT INTO lancamentos_posicao (posicao, sku, descricao, lote, fabricacao, validade, quantidade)
-        VALUES (${String(posicao).trim()}, ${sku}, ${descricao}, ${lote || null}, ${fabricacao || null}, ${validade || null}, ${qtdNum})
+        VALUES (${String(posicao).trim()}, ${sku}, ${descricao}, ${String(lote).trim()}, ${fabricacao || null}, ${validade || null}, ${qtdNum})
         RETURNING id, criado_em
       `;
       return res.status(200).json({ ok: true, id: rows[0].id, criado_em: rows[0].criado_em });
