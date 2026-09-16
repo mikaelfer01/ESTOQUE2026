@@ -249,6 +249,14 @@ let state = {
   log: []
 };
 
+// Insere as barras automaticamente enquanto digita: 03032026 -> 03/03/2026
+function maskData(v){
+  const digits = String(v).replace(/\D/g, '').slice(0, 8);
+  if(digits.length <= 2) return digits;
+  if(digits.length <= 4) return digits.slice(0, 2) + '/' + digits.slice(2);
+  return digits.slice(0, 2) + '/' + digits.slice(2, 4) + '/' + digits.slice(4);
+}
+
 function escapeHtml(s){
   return String(s == null ? '' : s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
 }
@@ -456,11 +464,11 @@ function render(){
       <div class="field-row">
         <div class="field">
           <label>Fabricação</label>
-          <input type="date" id="fab-input" value="${escapeHtml(state.fabricacao)}">
+          <input type="text" id="fab-input" inputmode="numeric" placeholder="dd/mm/aaaa" maxlength="10" value="${escapeHtml(state.fabricacao)}">
         </div>
         <div class="field">
           <label>Validade</label>
-          <input type="date" id="val-input" value="${escapeHtml(state.validade)}">
+          <input type="text" id="val-input" inputmode="numeric" placeholder="dd/mm/aaaa" maxlength="10" value="${escapeHtml(state.validade)}">
         </div>
       </div>
     </div>
@@ -518,10 +526,16 @@ function attachEvents(){
   if(loteInput) loteInput.addEventListener('input', (e) => { state.lote = e.target.value; });
 
   const fabInput = document.getElementById('fab-input');
-  if(fabInput) fabInput.addEventListener('input', (e) => { state.fabricacao = e.target.value; });
+  if(fabInput) fabInput.addEventListener('input', (e) => {
+    e.target.value = maskData(e.target.value);
+    state.fabricacao = e.target.value;
+  });
 
   const valInput = document.getElementById('val-input');
-  if(valInput) valInput.addEventListener('input', (e) => { state.validade = e.target.value; });
+  if(valInput) valInput.addEventListener('input', (e) => {
+    e.target.value = maskData(e.target.value);
+    state.validade = e.target.value;
+  });
 
   const qtyInput = document.getElementById('qty-input');
   if(qtyInput){

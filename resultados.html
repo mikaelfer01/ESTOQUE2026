@@ -414,12 +414,6 @@ document.getElementById('f-q').addEventListener('keydown', (e) => { if(e.key ===
 let lastPosicaoResults = [];
 let posicaoLoadedOnce = false;
 
-function fmtDateOnly(iso){
-  if(!iso) return '';
-  const d = new Date(iso + 'T00:00:00');
-  return new Intl.DateTimeFormat('pt-BR', { timeZone: 'America/Sao_Paulo', day:'2-digit', month:'2-digit', year:'numeric' }).format(d);
-}
-
 function buildPosicaoQuery(){
   const params = new URLSearchParams();
   const from = document.getElementById('p-from').value;
@@ -457,8 +451,8 @@ function renderPosicaoTable(rows){
       <td class="mono" data-label="SKU">${escapeHtml(r.sku)}</td>
       <td data-label="Descrição">${escapeHtml(r.descricao)}</td>
       <td data-label="Lote">${escapeHtml(r.lote || '—')}</td>
-      <td data-label="Fabricação">${r.fabricacao ? fmtDateOnly(r.fabricacao) : '—'}</td>
-      <td data-label="Validade">${r.validade ? fmtDateOnly(r.validade) : '—'}</td>
+      <td data-label="Fabricação">${escapeHtml(r.fabricacao || '—')}</td>
+      <td data-label="Validade">${escapeHtml(r.validade || '—')}</td>
       <td class="mono" data-label="Quantidade (kg)">${Number(r.quantidade).toLocaleString('pt-BR', {maximumFractionDigits:2})}</td>
       <td data-label="Lançado em">${fmtDate(r.criado_em)}</td>
     </tr>
@@ -487,7 +481,7 @@ function exportPosicaoCsv(){
   lastPosicaoResults.forEach(r => {
     lines.push([
       r.posicao, r.sku, (r.descricao || '').replace(/;/g, ','), r.lote || '',
-      r.fabricacao ? fmtDateOnly(r.fabricacao) : '', r.validade ? fmtDateOnly(r.validade) : '',
+      r.fabricacao || '', r.validade || '',
       String(r.quantidade).replace('.', ','), fmtDate(r.criado_em)
     ].map(v => `"${String(v).replace(/"/g,'""')}"`).join(';'));
   });
