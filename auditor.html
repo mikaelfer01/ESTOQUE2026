@@ -95,6 +95,14 @@
   .session-card-head .sub{ font-size:0.75rem; color:var(--ink-soft); margin-top:2px; }
   .status-badge{ display:inline-block; padding:3px 9px; border-radius:20px; font-size:0.7rem; font-weight:700; background:var(--warning-bg); color:var(--warning); white-space:nowrap; }
 
+  .current-position{
+    display:flex; align-items:center; gap:10px; padding:10px 16px;
+    background:var(--ok-bg); border-bottom:1px solid var(--line);
+  }
+  .current-position .lbl{ font-size:0.68rem; color:var(--ink-soft); text-transform:uppercase; letter-spacing:0.04em; }
+  .current-position .val{ font-family:'Consolas','Courier New', monospace; font-weight:700; color:var(--ok); font-size:1rem; }
+  .current-position .ago{ margin-left:auto; font-size:0.72rem; color:var(--ink-soft); white-space:nowrap; }
+
   .session-stats{ display:flex; gap:16px; padding:10px 16px; border-bottom:1px solid var(--line); background:#fafbfc; }
   .session-stats div{ font-size:0.78rem; color:var(--ink-soft); }
   .session-stats b{ color:var(--shell); font-size:0.95rem; display:block; }
@@ -237,6 +245,22 @@ function contagemCard(session){
   `;
 }
 
+function currentPositionBanner(session){
+  if(!session.posicao_atual) return '';
+  const segundos = session.posicao_atualizada_em ? Math.max(0, Math.round((Date.now() - new Date(session.posicao_atualizada_em).getTime()) / 1000)) : null;
+  const ha = segundos == null ? '' : segundos < 60 ? `há ${segundos}s` : `há ${Math.round(segundos/60)} min`;
+  return `
+    <div class="current-position">
+      <span class="live-dot"></span>
+      <div>
+        <div class="lbl">Lendo agora</div>
+        <div class="val">${escapeHtml(session.posicao_atual)}</div>
+      </div>
+      <span class="ago">${ha}</span>
+    </div>
+  `;
+}
+
 function posicaoCard(session){
   const rows = session.lancamentos || [];
   const totalQtd = rows.reduce((acc, r) => acc + Number(r.quantidade || 0), 0);
@@ -260,6 +284,7 @@ function posicaoCard(session){
         </div>
         <span class="status-badge">● aberta</span>
       </div>
+      ${currentPositionBanner(session)}
       <div class="session-stats">
         <div><b>${rows.length}</b>lançamentos</div>
         <div><b>${posicoes}</b>posições</div>

@@ -9,7 +9,7 @@ export default async function handler(req, res) {
       const status = req.query.status || 'aberta';
       const limit = Math.min(Number(req.query.limit) || 100, 200);
       const { rows } = await sql`
-        SELECT id, label, status, inicio, fim FROM sessoes
+        SELECT id, label, status, inicio, fim, posicao_atual, posicao_atualizada_em FROM sessoes
         WHERE status = ${status} AND tipo = ${tipo}
         ORDER BY inicio DESC
         LIMIT ${limit}

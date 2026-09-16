@@ -384,6 +384,16 @@ async function finishSession(sessionId){
   return data;
 }
 
+// Avisa o servidor qual posição está sendo lida agora — não bloqueia o
+// fluxo de contagem se falhar, é só pro modo auditor acompanhar ao vivo.
+function updateCurrentPosition(posicao){
+  fetch(`/api/sessions/${state.session.id}/posicao-atual`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ posicao })
+  }).catch(() => {});
+}
+
 async function lancarPosicao(payload){
   const res = await fetch('/api/posicao', {
     method: 'POST',
@@ -617,11 +627,18 @@ function attachLaunchingEvents(){
   const posicaoInput = document.getElementById('posicao-input');
   if(posicaoInput){
     posicaoInput.addEventListener('input', (e) => { state.posicao = e.target.value; });
-    posicaoInput.addEventListener('keydown', (e) => { if(e.key === 'Enter'){ state.posicao = e.target.value.trim(); render(); } });
+    posicaoInput.addEventListener('keydown', (e) => {
+      if(e.key === 'Enter'){
+        state.posicao = e.target.value.trim();
+        if(state.posicao) updateCurrentPosition(state.posicao);
+        render();
+      }
+    });
   }
   const scanPosBtn = document.getElementById('scan-posicao-btn');
   if(scanPosBtn) scanPosBtn.addEventListener('click', () => openScanner(['qr_code'], (value) => {
     state.posicao = value.trim();
+    updateCurrentPosition(state.posicao);
     render();
   }));
   const clearPosicao = document.getElementById('clear-posicao');
