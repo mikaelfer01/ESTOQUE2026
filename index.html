@@ -159,16 +159,16 @@
   /* Leitor tipo LCD/terminal para a quantidade — a peça central do
      "coletor de dados": dígitos grandes, verdes, em monoespaçada. */
   .qty-readout{
-    background:#04140a; border:1px solid var(--ok); border-radius:6px;
-    padding:14px 16px; margin-bottom:0;
+    background:var(--ok-bg); border:1px solid var(--ok); border-radius:6px;
+    padding:14px 16px; margin-bottom:0; display:flex; align-items:center; justify-content:space-between;
   }
   .qty-readout input{
     font-family:'Consolas','Courier New', monospace; font-size:2.1rem; font-weight:700;
     color:var(--ok); background:transparent; border:none; width:100%; padding:0;
-    text-shadow: 0 0 10px rgba(63,185,80,0.5); letter-spacing:0.02em;
+    letter-spacing:0.02em;
   }
   .qty-readout input:focus{ outline:none; }
-  .qty-readout .unit{ color:#5a8a6e; font-size:0.85rem; text-transform:uppercase; letter-spacing:0.05em; font-weight:600; }
+  .qty-readout .unit{ color:var(--ok); opacity:0.75; font-size:0.85rem; text-transform:uppercase; letter-spacing:0.05em; font-weight:700; }
 
   .scan-btn{
     display:flex; align-items:center; justify-content:center; gap:8px;
@@ -553,6 +553,31 @@ async function finishSession(sessionId){
   return data;
 }
 
+// ---- Gera e baixa a planilha (CSV) da contagem finalizada ----
+function downloadCsv(filename, headers, rows){
+  const escapeCsv = (v) => `"${String(v == null ? '' : v).replace(/"/g, '""')}"`;
+  const lines = [headers.map(escapeCsv).join(';')];
+  rows.forEach(r => lines.push(r.map(escapeCsv).join(';')));
+  const blob = new Blob(['﻿' + lines.join('\r\n')], { type: 'text/csv;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 4000);
+}
+
+async function baixarPlanilhaSessao(sessionId, label){
+  const res = await fetch(`/api/results?sessionId=${encodeURIComponent(sessionId)}`);
+  const data = await res.json();
+  if(data.error) throw new Error(data.error);
+  const rows = data.results.map(r => [r.sku, r.descricao, Number(r.quantidade)]);
+  const nomeArquivo = 'contagem-' + label.replace(/[^0-9a-zA-Z]+/g, '-') + '.csv';
+  downloadCsv(nomeArquivo, ['SKU', 'Descricao', 'Quantidade_kg'], rows);
+}
+
 async function loadSessionsScreen(){
   state.view = 'loading'; render();
   try{
@@ -652,7 +677,12 @@ function attachCountingEvents(){
     state.busy = true;
     try{
       await finishSession(state.session.id);
-      showToast('Contagem finalizada.');
+      try{
+        await baixarPlanilhaSessao(state.session.id, state.session.label);
+        showToast('Contagem finalizada. Planilha baixada.');
+      } catch(csvErr){
+        showToast('Contagem finalizada, mas não deu pra gerar a planilha: ' + csvErr.message, true);
+      }
       state.confirmFinish = false;
       state.session = null;
       await loadSessionsScreen();

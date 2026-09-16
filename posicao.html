@@ -147,16 +147,16 @@
   .clear-sel{ background:none; border:none; color:var(--ink-soft); font-size:1.2rem; padding:0 4px; }
 
   .qty-readout{
-    background:#04140a; border:1px solid var(--ok); border-radius:6px;
+    background:var(--ok-bg); border:1px solid var(--ok); border-radius:6px;
     padding:14px 16px; display:flex; align-items:center; justify-content:space-between;
   }
   .qty-readout input{
     font-family:'Consolas','Courier New', monospace; font-size:2.1rem; font-weight:700;
     color:var(--ok); background:transparent; border:none; width:100%; padding:0;
-    text-shadow: 0 0 10px rgba(63,185,80,0.5); letter-spacing:0.02em;
+    letter-spacing:0.02em;
   }
   .qty-readout input:focus{ outline:none; }
-  .qty-readout .unit{ color:#5a8a6e; font-size:0.85rem; text-transform:uppercase; letter-spacing:0.05em; font-weight:600; }
+  .qty-readout .unit{ color:var(--ok); opacity:0.75; font-size:0.85rem; text-transform:uppercase; letter-spacing:0.05em; font-weight:700; }
 
   .log{ margin-top:18px; }
   .log h3{ font-size:0.72rem; text-transform:uppercase; letter-spacing:0.05em; color:var(--ink-soft); margin-bottom:8px; font-weight:700; }
@@ -339,6 +339,31 @@ async function lancarPosicao(payload){
   return data;
 }
 
+// ---- Gera e baixa a planilha (CSV) com os lançamentos desta sessão ----
+function downloadCsv(filename, headers, rows){
+  const escapeCsv = (v) => `"${String(v == null ? '' : v).replace(/"/g, '""')}"`;
+  const lines = [headers.map(escapeCsv).join(';')];
+  rows.forEach(r => lines.push(r.map(escapeCsv).join(';')));
+  const blob = new Blob(['﻿' + lines.join('\r\n')], { type: 'text/csv;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 4000);
+}
+
+function finalizarEBaixarPlanilha(){
+  const rows = state.log.map(l => [l.posicao, l.sku, l.descricao, l.lote || '', l.fabricacao || '', l.validade || '', l.quantidade]);
+  const agora = new Date();
+  const carimbo = agora.toISOString().slice(0, 16).replace(/[:T]/g, '-');
+  downloadCsv('lancamentos-posicao-' + carimbo + '.csv',
+    ['Posicao', 'SKU', 'Descricao', 'Lote', 'Fabricacao', 'Validade', 'Quantidade_kg'], rows);
+  showToast('Planilha baixada com ' + state.log.length + ' lançamento(s).');
+}
+
 function render(){
   const c = document.getElementById('content');
   if(state.loading){
@@ -403,6 +428,7 @@ function render(){
             </div>
           </div>
         `).join('')}
+        <button type="button" class="btn-secondary btn-block" id="finalizar-btn" style="margin-top:12px;">Finalizar e baixar planilha</button>
       </div>
     `;
   }
@@ -505,6 +531,9 @@ function attachEvents(){
 
   const lancarBtn = document.getElementById('lancar-btn');
   if(lancarBtn) lancarBtn.addEventListener('click', doLancar);
+
+  const finalizarBtn = document.getElementById('finalizar-btn');
+  if(finalizarBtn) finalizarBtn.addEventListener('click', finalizarEBaixarPlanilha);
 }
 
 async function doLancar(){
