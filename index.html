@@ -343,8 +343,6 @@ function renderSessions(){
 }
 
 function renderCounting(){
-  const filtered = state.search.trim() === '' ? [] : searchProducts(state.search, state.products);
-
   let selBlock = '';
   if(state.selectedProduct){
     selBlock = `
@@ -375,17 +373,7 @@ function renderCounting(){
           <button type="button" class="scan-btn" id="scan-btn" title="Escanear código de barras"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8V6a2 2 0 0 1 2-2h2M4 16v2a2 2 0 0 0 2 2h2M20 8V6a2 2 0 0 0-2-2h-2M20 16v2a2 2 0 0 1-2 2h-2"></path><circle cx="12" cy="12" r="3.2"></circle></svg></button>
         </div>
       </div>
-      ${ state.search.trim() === '' ? '' : `
-      <div class="search-results">
-        ${ filtered.length === 0 ? `<div class="empty">Nenhum produto encontrado.</div>`
-          : filtered.map(p => `
-              <div class="prod-item" data-sku="${escapeHtml(p.sku)}">
-                <span class="prod-sku">${escapeHtml(p.sku)}</span>
-                <span class="prod-desc">${escapeHtml(p.descricao)}</span>
-              </div>
-            `).join('')
-        }
-      </div>` }
+      <div class="search-results" id="search-results-box"></div>
     `;
   }
 
@@ -479,6 +467,24 @@ function searchProducts(query, products){
 
 function escapeHtml(s){
   return String(s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+}
+
+// Atualiza só a lista de resultados da busca, sem tocar no <input> —
+// ver comentário em attachCountingEvents.
+function renderSearchResults(){
+  const box = document.getElementById('search-results-box');
+  if(!box) return;
+  const term = state.search.trim();
+  if(term === ''){ box.innerHTML = ''; return; }
+  const filtered = searchProducts(term, state.products);
+  box.innerHTML = filtered.length === 0
+    ? `<div class="empty">Nenhum produto encontrado.</div>`
+    : filtered.map(p => `
+        <div class="prod-item" data-sku="${escapeHtml(p.sku)}">
+          <span class="prod-sku">${escapeHtml(p.sku)}</span>
+          <span class="prod-desc">${escapeHtml(p.descricao)}</span>
+        </div>
+      `).join('');
 }
 
 function showToast(msg, isError){
@@ -625,21 +631,26 @@ function attachSessionEvents(){
 function attachCountingEvents(){
   const searchInput = document.getElementById('search-input');
   if(searchInput){
+    // A lista de resultados é atualizada à parte (renderSearchResults),
+    // sem recriar o <input> — recriar o campo a cada tecla fazia o teclado
+    // numérico/predição do Android reiniciar (voltando pra letras).
+    renderSearchResults();
     searchInput.addEventListener('input', (e) => {
       state.search = e.target.value;
-      render();
-      const el = document.getElementById('search-input');
-      el.focus();
-      el.selectionStart = el.selectionEnd = el.value.length;
+      renderSearchResults();
     });
-    document.querySelectorAll('.prod-item').forEach(item => {
-      item.addEventListener('click', () => {
-        const sku = item.dataset.sku;
-        state.selectedProduct = state.products.find(p => p.sku === sku);
-        state.qty = '';
-        render();
-        setTimeout(() => { const q = document.getElementById('qty-input'); if(q) q.focus(); }, 0);
-      });
+  }
+
+  const resultsBox = document.getElementById('search-results-box');
+  if(resultsBox){
+    resultsBox.addEventListener('click', (e) => {
+      const item = e.target.closest('.prod-item');
+      if(!item) return;
+      const sku = item.dataset.sku;
+      state.selectedProduct = state.products.find(p => p.sku === sku);
+      state.qty = '';
+      render();
+      setTimeout(() => { const q = document.getElementById('qty-input'); if(q) q.focus(); }, 0);
     });
   }
 

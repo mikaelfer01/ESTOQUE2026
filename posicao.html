@@ -332,6 +332,25 @@ function searchProducts(query, products){
   return scored.slice(0, 40).map(s => s.p);
 }
 
+// Atualiza só a lista de resultados da busca, sem recriar o <input> —
+// recriar o campo a cada tecla fazia o teclado do Android reiniciar
+// (voltando pra letras) toda vez que um número era digitado.
+function renderSearchResults(){
+  const box = document.getElementById('search-results-box');
+  if(!box) return;
+  const term = state.search.trim();
+  if(term === ''){ box.innerHTML = ''; return; }
+  const filtered = searchProducts(term, state.products);
+  box.innerHTML = filtered.length === 0
+    ? `<div class="empty">Nenhum produto encontrado.</div>`
+    : filtered.map(p => `
+        <div class="prod-item" data-sku="${escapeHtml(p.sku)}">
+          <span class="prod-sku">${escapeHtml(p.sku)}</span>
+          <span class="prod-desc">${escapeHtml(p.descricao)}</span>
+        </div>
+      `).join('');
+}
+
 async function getProducts(){
   const res = await fetch('/api/products');
   const data = await res.json();
@@ -520,20 +539,9 @@ function renderLaunching(){
       </div>
     `;
   } else {
-    const filtered = state.search.trim() === '' ? [] : searchProducts(state.search, state.products);
     produtoBlock = `
       <input type="text" id="search-input" placeholder="Código (SKU) ou nome do produto" value="${escapeHtml(state.search)}" autocomplete="off">
-      ${ state.search.trim() === '' ? '' : `
-      <div class="search-results">
-        ${ filtered.length === 0 ? `<div class="empty">Nenhum produto encontrado.</div>`
-          : filtered.map(p => `
-              <div class="prod-item" data-sku="${escapeHtml(p.sku)}">
-                <span class="prod-sku">${escapeHtml(p.sku)}</span>
-                <span class="prod-desc">${escapeHtml(p.descricao)}</span>
-              </div>
-            `).join('')
-        }
-      </div>` }
+      <div class="search-results" id="search-results-box"></div>
     `;
   }
 
@@ -620,19 +628,21 @@ function attachLaunchingEvents(){
 
   const searchInput = document.getElementById('search-input');
   if(searchInput){
+    renderSearchResults();
     searchInput.addEventListener('input', (e) => {
       state.search = e.target.value;
-      render();
-      const el = document.getElementById('search-input');
-      if(el){ el.focus(); el.selectionStart = el.selectionEnd = el.value.length; }
+      renderSearchResults();
     });
-    document.querySelectorAll('.prod-item').forEach(item => {
-      item.addEventListener('click', () => {
-        const sku = item.dataset.sku;
-        state.selectedProduct = state.products.find(p => p.sku === sku);
-        render();
-        setTimeout(() => { const q = document.getElementById('qty-input'); if(q) q.focus(); }, 0);
-      });
+  }
+  const resultsBox = document.getElementById('search-results-box');
+  if(resultsBox){
+    resultsBox.addEventListener('click', (e) => {
+      const item = e.target.closest('.prod-item');
+      if(!item) return;
+      const sku = item.dataset.sku;
+      state.selectedProduct = state.products.find(p => p.sku === sku);
+      render();
+      setTimeout(() => { const q = document.getElementById('qty-input'); if(q) q.focus(); }, 0);
     });
   }
   const clearProduto = document.getElementById('clear-produto');
