@@ -1,12 +1,12 @@
 import { sql, ensureSchema } from '../lib/db.js';
 
 export default async function handler(req, res) {
-  await ensureSchema();
   if (req.method !== 'POST') {
     res.setHeader('Allow', 'POST');
     return res.status(405).json({ error: 'Método não permitido' });
   }
   try {
+    await ensureSchema();
     const { sessionId, sku, qtd } = req.body || {};
     const qtdNum = Number(qtd);
     if (!sessionId || !sku || !(qtdNum > 0)) {

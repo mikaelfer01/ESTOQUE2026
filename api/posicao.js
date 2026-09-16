@@ -1,8 +1,8 @@
 import { sql, ensureSchema } from '../lib/db.js';
 
 export default async function handler(req, res) {
-  await ensureSchema();
   try {
+    await ensureSchema();
     if (req.method === 'GET') {
       const { from, to, posicao, q } = req.query;
 

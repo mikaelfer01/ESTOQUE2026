@@ -1,8 +1,8 @@
 import { sql, ensureSchema } from '../lib/db.js';
 
 export default async function handler(req, res) {
-  await ensureSchema();
   try {
+    await ensureSchema();
     if (req.method === 'GET') {
       const { rows } = await sql`SELECT sku, descricao FROM produtos ORDER BY descricao ASC`;
       return res.status(200).json({ products: rows });

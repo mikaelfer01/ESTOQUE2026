@@ -1,12 +1,12 @@
 import { sql, ensureSchema } from '../lib/db.js';
 
 export default async function handler(req, res) {
-  await ensureSchema();
   if (req.method !== 'GET') {
     res.setHeader('Allow', 'GET');
     return res.status(405).json({ error: 'Método não permitido' });
   }
   try {
+    await ensureSchema();
     const { from, to, sessionId, status, q } = req.query;
 
     let text = `
