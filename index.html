@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Contagem de Estoque</title>
 <link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#05070a">
+<meta name="theme-color" content="#1d2d3e">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -13,25 +13,25 @@
 <link rel="apple-touch-icon" href="icons/icon-192.png">
 <style>
   :root{
-    /* Tema "coletor de dados": tela escura, alto contraste, leitura tipo
-       terminal/LED — a mesma linguagem visual dos leitores de código de
-       barras industriais (Zebra/Honeywell) em vez de um formulário web comum. */
-    --shell: #05070a;
-    --shell-dark: #000000;
-    --brand: #2f81f7;
-    --brand-dark: #1f63c4;
-    --bg: #0b0f14;
-    --surface: #131a22;
-    --surface-raised: #1a2330;
-    --ink: #e8edf2;
-    --ink-soft: #8a97a3;
-    --line: #26313c;
-    --ok: #3fb950;
-    --ok-bg: rgba(63,185,80,0.14);
-    --warning: #f0b429;
-    --warning-bg: rgba(240,180,41,0.14);
-    --danger: #f85149;
-    --danger-bg: rgba(248,81,73,0.14);
+    /* Tema "coletor de dados" claro: cores vivas e alto contraste como um
+       leitor industrial (Zebra/Honeywell), só que em fundo claro — o visor
+       de quantidade continua com o efeito LED verde escuro como destaque. */
+    --shell: #1d2d3e;
+    --shell-dark: #16232f;
+    --brand: #0a6ed1;
+    --brand-dark: #085caf;
+    --bg: #f2f4f6;
+    --surface: #ffffff;
+    --surface-raised: #eef1f4;
+    --ink: #1d2d3e;
+    --ink-soft: #6a6d78;
+    --line: #d9dde1;
+    --ok: #107e3e;
+    --ok-bg: #e6f4ea;
+    --warning: #b96400;
+    --warning-bg: #fdf1e2;
+    --danger: #bb0000;
+    --danger-bg: #fbe9e9;
     font-size: 16px;
   }
   *{ box-sizing:border-box; }
@@ -126,7 +126,7 @@
   .btn-primary{ background: var(--brand); color:#fff; }
   .btn-primary:hover{ background: var(--brand-dark); }
   .btn-secondary{ background:var(--surface-raised); color:var(--ink); border:1px solid var(--line); }
-  .btn-secondary:hover{ background:#233040; }
+  .btn-secondary:hover{ background:#e2e6ea; }
   .btn-danger{ background: var(--danger); color:#fff; }
   .btn-danger:hover{ background:#970000; }
   .btn-block{ width:100%; }
@@ -168,7 +168,7 @@
     text-shadow: 0 0 10px rgba(63,185,80,0.5); letter-spacing:0.02em;
   }
   .qty-readout input:focus{ outline:none; }
-  .qty-readout .unit{ color:var(--ink-soft); font-size:0.85rem; text-transform:uppercase; letter-spacing:0.05em; font-weight:600; }
+  .qty-readout .unit{ color:#5a8a6e; font-size:0.85rem; text-transform:uppercase; letter-spacing:0.05em; font-weight:600; }
 
   .scan-btn{
     display:flex; align-items:center; justify-content:center; gap:8px;
@@ -190,7 +190,7 @@
     color:#fff; font-size:0.8rem; text-shadow:0 1px 3px rgba(0,0,0,0.8);
   }
   .scanner-footer{ padding:14px 16px; background:var(--surface); }
-  .scanner-error{ padding:20px 16px; color:var(--ink); font-size:0.9rem; }
+  .scanner-error{ padding:20px 16px; color:#fff; font-size:0.9rem; }
 
   .header-bar{
     display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; gap:10px;
@@ -210,10 +210,10 @@
 
   .toast{
     position:fixed; left:50%; bottom:24px; transform:translateX(-50%);
-    background:var(--surface-raised); color:var(--ink); border:1px solid var(--line);
+    background:var(--shell); color:#fff; border:none;
     padding:12px 20px; border-radius:5px;
     font-size:0.9rem; opacity:0; pointer-events:none; transition:opacity 0.2s ease, transform 0.2s ease;
-    max-width:90vw; text-align:center; box-shadow:0 4px 14px rgba(0,0,0,0.4);
+    max-width:90vw; text-align:center; box-shadow:0 4px 14px rgba(0,0,0,0.25);
   }
   .toast.show{ opacity:1; transform:translateX(-50%) translateY(-6px); }
   .toast.error{ background: var(--danger); }
@@ -287,7 +287,7 @@ function render(){
   shell.classList.toggle('top-align', state.view === 'counting');
 
   if(state.view === 'loading'){
-    c.innerHTML = `<div class="empty"><span class="spinner" style="border-color:rgba(255,255,255,0.15); border-top-color:var(--brand);"></span><br><br>Carregando...</div>`;
+    c.innerHTML = `<div class="empty"><span class="spinner" style="border-color:rgba(0,0,0,0.12); border-top-color:var(--brand);"></span><br><br>Carregando...</div>`;
     return;
   }
   if(state.view === 'sessions'){
