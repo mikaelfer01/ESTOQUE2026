@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Modo Auditor</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#1d2d3e">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Estoque WMS">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<style>
+  :root{
+    --shell: #1d2d3e;
+    --shell-dark: #16232f;
+    --brand: #0a6ed1;
+    --brand-dark: #085caf;
+    --bg: #f5f6f7;
+    --surface: #ffffff;
+    --ink: #1d2d3e;
+    --ink-soft: #6a6d78;
+    --line: #d9dde1;
+    --ok: #107e3e;
+    --ok-bg: #e6f4ea;
+    --warning: #df6e0c;
+    --warning-bg: #fdf1e2;
+    --danger: #bb0000;
+    --danger-bg: #fbe9e9;
+  }
+  *{ box-sizing:border-box; }
+  html,body{ margin:0; padding:0; }
+  body{
+    background: var(--bg); color: var(--ink);
+    font-family: 'Segoe UI', Roboto, -apple-system, sans-serif;
+    min-height:100vh;
+  }
+
+  .shellbar{
+    background: linear-gradient(180deg, var(--shell), var(--shell-dark));
+    color:#fff; padding:0 16px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.18);
+  }
+  .shellbar-inner{
+    max-width:1100px; margin:0 auto;
+    display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between;
+    gap:6px 14px; padding:12px 0;
+  }
+  .brand{ display:flex; align-items:center; gap:8px; font-weight:700; font-size:0.98rem; white-space:nowrap; }
+  .brand-icon{
+    display:inline-flex; align-items:center; justify-content:center;
+    width:22px; height:22px; border-radius:5px; background:var(--brand);
+    font-size:0.8rem; font-weight:800;
+  }
+  .brand-accent{ color:#8fc4ff; font-weight:400; }
+  .shell-nav{ display:flex; gap:4px; flex-wrap:wrap; }
+  .shell-nav a{
+    color:rgba(255,255,255,0.72); text-decoration:none; font-size:0.82rem; font-weight:600;
+    padding:6px 10px; border-radius:4px; transition: background 0.12s ease, color 0.12s ease;
+  }
+  .shell-nav a:hover{ background:rgba(255,255,255,0.08); color:#fff; }
+  .shell-nav a.active{ background:var(--brand); color:#fff; }
+
+  .wrap{ max-width: 1100px; margin: 0 auto; padding: 14px 12px 40px; }
+
+  .topline{ display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; gap:8px; margin-bottom:14px; }
+  h1{ font-size:1.2rem; margin: 0; font-weight:700; color:var(--shell); }
+  .live-badge{
+    display:inline-flex; align-items:center; gap:6px; font-size:0.78rem; font-weight:700;
+    color:var(--ok); background:var(--ok-bg); border:1px solid var(--ok); border-radius:20px;
+    padding:4px 12px;
+  }
+  .live-dot{
+    width:8px; height:8px; border-radius:50%; background:var(--ok);
+    animation: pulse 1.4s ease-in-out infinite;
+  }
+  @keyframes pulse{ 0%,100%{ opacity:1; } 50%{ opacity:0.3; } }
+  .updated-at{ font-size:0.75rem; color:var(--ink-soft); }
+
+  .summary{
+    display:grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap:10px;
+    margin-bottom:20px;
+  }
+  .stat{ background:var(--surface); border:1px solid var(--line); border-radius:6px; padding:14px; box-shadow:0 1px 3px rgba(29,45,62,0.06); border-top:3px solid var(--brand); }
+  .stat .num{ font-size:1.5rem; font-weight:800; color:var(--shell); }
+  .stat .lbl{ font-size:0.72rem; color:var(--ink-soft); text-transform:uppercase; letter-spacing:0.04em; margin-top:2px; }
+
+  .section-title{ font-size:0.78rem; font-weight:700; text-transform:uppercase; letter-spacing:0.05em; color:var(--ink-soft); margin: 22px 0 10px; }
+
+  .sessions-grid{ display:grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap:14px; }
+  .session-card{ background:var(--surface); border:1px solid var(--line); border-radius:8px; box-shadow:0 1px 3px rgba(29,45,62,0.06); overflow:hidden; }
+  .session-card-head{ padding:14px 16px; border-bottom:1px solid var(--line); display:flex; justify-content:space-between; align-items:flex-start; gap:10px; }
+  .session-card-head .label{ font-weight:700; font-size:0.95rem; }
+  .session-card-head .sub{ font-size:0.75rem; color:var(--ink-soft); margin-top:2px; }
+  .status-badge{ display:inline-block; padding:3px 9px; border-radius:20px; font-size:0.7rem; font-weight:700; background:var(--warning-bg); color:var(--warning); white-space:nowrap; }
+
+  .session-stats{ display:flex; gap:16px; padding:10px 16px; border-bottom:1px solid var(--line); background:#fafbfc; }
+  .session-stats div{ font-size:0.78rem; color:var(--ink-soft); }
+  .session-stats b{ color:var(--shell); font-size:0.95rem; display:block; }
+
+  .feed{ max-height:260px; overflow-y:auto; }
+  .feed-item{ padding:9px 16px; border-bottom:1px solid #f0f1f2; font-size:0.85rem; display:flex; justify-content:space-between; gap:10px; }
+  .feed-item:last-child{ border-bottom:none; }
+  .feed-item .desc{ font-weight:600; }
+  .feed-item .meta{ font-size:0.72rem; color:var(--ink-soft); margin-top:1px; }
+  .feed-item .qty{ font-weight:700; color:var(--ok); white-space:nowrap; }
+
+  .empty{ text-align:center; color:var(--ink-soft); padding:24px 10px; font-size:0.9rem; }
+  .spinner{
+    width:16px; height:16px; border:2px solid rgba(0,0,0,0.12);
+    border-top-color:var(--brand); border-radius:50%; display:inline-block;
+    animation: spin 0.7s linear infinite; vertical-align:middle;
+  }
+  @keyframes spin{ to{ transform:rotate(360deg); } }
+</style>
+</head>
+<body>
+<header class="shellbar">
+  <div class="shellbar-inner">
+    <div class="brand"><span class="brand-icon">E</span>Estoque<span class="brand-accent">WMS</span></div>
+    <nav class="shell-nav">
+      <a href="index.html">Contagem</a>
+      <a href="posicao.html">Posição</a>
+      <a href="resultados.html">Resultados</a>
+      <a href="auditor.html" class="active">Auditor</a>
+      <a href="admin.html">Admin</a>
+    </nav>
+  </div>
+</header>
+<main class="wrap">
+  <div class="topline">
+    <h1>Modo auditor</h1>
+    <div style="display:flex; align-items:center; gap:12px;">
+      <span class="updated-at" id="updated-at"></span>
+      <span class="live-badge"><span class="live-dot"></span> AO VIVO</span>
+    </div>
+  </div>
+
+  <div class="summary" id="summary">
+    <div class="stat"><div class="num">—</div><div class="lbl">Sessões abertas</div></div>
+    <div class="stat"><div class="num">—</div><div class="lbl">Lançamentos</div></div>
+    <div class="stat"><div class="num">—</div><div class="lbl">Total (kg)</div></div>
+  </div>
+
+  <div class="section-title">Contagens abertas</div>
+  <div class="sessions-grid" id="contagem-grid">
+    <div class="empty"><span class="spinner"></span> Carregando...</div>
+  </div>
+
+  <div class="section-title">Lançamentos por posição abertos</div>
+  <div class="sessions-grid" id="posicao-grid">
+    <div class="empty"><span class="spinner"></span> Carregando...</div>
+  </div>
+</main>
+
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => navigator.serviceWorker.register('sw.js'));
+}
+</script>
+<script>
+function escapeHtml(s){
+  return String(s == null ? '' : s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+}
+
+function fmtTime(iso){
+  if(!iso) return '';
+  return new Intl.DateTimeFormat('pt-BR', { timeZone: 'America/Sao_Paulo', hour:'2-digit', minute:'2-digit', second:'2-digit' }).format(new Date(iso));
+}
+
+async function fetchJson(url){
+  const res = await fetch(url);
+  const data = await res.json();
+  if(data.error) throw new Error(data.error);
+  return data;
+}
+
+function renderEmptyGrid(el, msg){
+  el.innerHTML = `<div class="empty">${escapeHtml(msg)}</div>`;
+}
+
+function contagemCard(session){
+  const rows = session.results || [];
+  const totalQtd = rows.reduce((acc, r) => acc + Number(r.quantidade || 0), 0);
+  const skus = new Set(rows.map(r => r.sku)).size;
+  const feed = rows.slice(0, 12).map(r => `
+    <div class="feed-item">
+      <div>
+        <div class="desc">${escapeHtml(r.descricao || r.sku)}</div>
+        <div class="meta">${escapeHtml(r.sku)} · ${fmtTime(r.atualizado_em)}</div>
+      </div>
+      <div class="qty">${Number(r.quantidade).toLocaleString('pt-BR', {maximumFractionDigits:2})} kg</div>
+    </div>
+  `).join('') || `<div class="empty">Nenhum lançamento ainda.</div>`;
+
+  return `
+    <div class="session-card">
+      <div class="session-card-head">
+        <div>
+          <div class="label">${escapeHtml(session.label)}</div>
+          <div class="sub">Contagem</div>
+        </div>
+        <span class="status-badge">● aberta</span>
+      </div>
+      <div class="session-stats">
+        <div><b>${rows.length}</b>lançamentos</div>
+        <div><b>${skus}</b>produtos</div>
+        <div><b>${totalQtd.toLocaleString('pt-BR', {maximumFractionDigits:2})}</b>kg</div>
+      </div>
+      <div class="feed">${feed}</div>
+    </div>
+  `;
+}
+
+function posicaoCard(session){
+  const rows = session.lancamentos || [];
+  const totalQtd = rows.reduce((acc, r) => acc + Number(r.quantidade || 0), 0);
+  const posicoes = new Set(rows.map(r => r.posicao)).size;
+  const feed = rows.slice(0, 12).map(r => `
+    <div class="feed-item">
+      <div>
+        <div class="desc">${escapeHtml(r.descricao || r.sku)}</div>
+        <div class="meta">Posição ${escapeHtml(r.posicao || '—')} · ${fmtTime(r.criado_em)}</div>
+      </div>
+      <div class="qty">${Number(r.quantidade).toLocaleString('pt-BR', {maximumFractionDigits:2})} kg</div>
+    </div>
+  `).join('') || `<div class="empty">Nenhum lançamento ainda.</div>`;
+
+  return `
+    <div class="session-card">
+      <div class="session-card-head">
+        <div>
+          <div class="label">${escapeHtml(session.label)}</div>
+          <div class="sub">Por posição</div>
+        </div>
+        <span class="status-badge">● aberta</span>
+      </div>
+      <div class="session-stats">
+        <div><b>${rows.length}</b>lançamentos</div>
+        <div><b>${posicoes}</b>posições</div>
+        <div><b>${totalQtd.toLocaleString('pt-BR', {maximumFractionDigits:2})}</b>kg</div>
+      </div>
+      <div class="feed">${feed}</div>
+    </div>
+  `;
+}
+
+async function refresh(){
+  try{
+    const [contagemSessRes, posicaoSessRes] = await Promise.all([
+      fetchJson('/api/sessions?tipo=contagem'),
+      fetchJson('/api/sessions?tipo=posicao')
+    ]);
+
+    const contagemDetails = await Promise.all(contagemSessRes.sessions.map(async s => {
+      const r = await fetchJson('/api/results?sessionId=' + encodeURIComponent(s.id));
+      return { ...s, results: r.results };
+    }));
+    const posicaoDetails = await Promise.all(posicaoSessRes.sessions.map(async s => {
+      const r = await fetchJson('/api/posicao?sessionId=' + encodeURIComponent(s.id));
+      return { ...s, lancamentos: r.lancamentos };
+    }));
+
+    const contagemGrid = document.getElementById('contagem-grid');
+    if(contagemDetails.length === 0) renderEmptyGrid(contagemGrid, 'Nenhuma contagem aberta no momento.');
+    else contagemGrid.innerHTML = contagemDetails.map(contagemCard).join('');
+
+    const posicaoGrid = document.getElementById('posicao-grid');
+    if(posicaoDetails.length === 0) renderEmptyGrid(posicaoGrid, 'Nenhuma sessão por posição aberta no momento.');
+    else posicaoGrid.innerHTML = posicaoDetails.map(posicaoCard).join('');
+
+    const totalSessoes = contagemDetails.length + posicaoDetails.length;
+    const totalLancamentos = contagemDetails.reduce((acc, s) => acc + s.results.length, 0)
+      + posicaoDetails.reduce((acc, s) => acc + s.lancamentos.length, 0);
+    const totalKg = contagemDetails.reduce((acc, s) => acc + s.results.reduce((a, r) => a + Number(r.quantidade || 0), 0), 0)
+      + posicaoDetails.reduce((acc, s) => acc + s.lancamentos.reduce((a, r) => a + Number(r.quantidade || 0), 0), 0);
+
+    document.getElementById('summary').innerHTML = `
+      <div class="stat"><div class="num">${totalSessoes}</div><div class="lbl">Sessões abertas</div></div>
+      <div class="stat"><div class="num">${totalLancamentos}</div><div class="lbl">Lançamentos</div></div>
+      <div class="stat"><div class="num">${totalKg.toLocaleString('pt-BR', {maximumFractionDigits:2})}</div><div class="lbl">Total (kg)</div></div>
+    `;
+
+    document.getElementById('updated-at').textContent = 'Atualizado às ' + fmtTime(new Date().toISOString());
+  } catch(err){
+    document.getElementById('updated-at').textContent = 'Erro ao atualizar: ' + err.message;
+  }
+}
+
+refresh();
+setInterval(refresh, 6000);
+</script>
+</body>
+</html>

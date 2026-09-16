@@ -1,8 +1,10 @@
-const CACHE_NAME = 'estoque-wms-v2';
+const CACHE_NAME = 'estoque-wms-v3';
 const CORE_ASSETS = [
   '/index.html',
+  '/posicao.html',
   '/admin.html',
   '/resultados.html',
+  '/auditor.html',
   '/manifest.json',
   '/icons/icon-192.png',
   '/icons/icon-512.png'

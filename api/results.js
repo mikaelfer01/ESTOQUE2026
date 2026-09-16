@@ -29,7 +29,7 @@ export default async function handler(req, res) {
       params.push(`%${q}%`);
       idx++;
     }
-    text += ` ORDER BY s.inicio DESC, p.descricao ASC NULLS LAST`;
+    text += ` ORDER BY c.atualizado_em DESC`;
 
     const { rows } = await sql.query(text, params);
     const sessRes = await sql`SELECT id, label, status, inicio, fim FROM sessoes ORDER BY inicio DESC`;
