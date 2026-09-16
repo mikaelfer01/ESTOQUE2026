@@ -13,9 +13,6 @@
 <link rel="apple-touch-icon" href="icons/icon-192.png">
 <style>
   :root{
-    /* Tema "coletor de dados" claro: cores vivas e alto contraste, mas em
-       fundo claro — o visor de quantidade mantém o efeito LED verde escuro
-       como destaque, igual a um leitor industrial de verdade. */
     --shell: #1d2d3e;
     --shell-dark: #16232f;
     --brand: #0a6ed1;
@@ -100,37 +97,13 @@
   .btn-block{ width:100%; }
   button:disabled{ opacity:0.5; cursor:not-allowed; }
 
-  .field label{ display:block; font-size:0.76rem; color:var(--ink-soft); margin-bottom:5px; font-weight:600; }
-
-  /* Estilo base para TODOS os campos de texto/data/número da página —
-     antes só valia para inputs dentro de .field, deixando "Posição" e
-     "Buscar produto" (fora de .field) pequenos e sem respiro. */
-  input[type="text"], input[type="number"], input[type="date"], select{
+  input[type="text"], input[type="number"]{
     width:100%; min-height:46px; padding:10px 12px; border:1px solid var(--line);
     border-radius:6px; font-size:1rem; background:var(--surface-raised); color:var(--ink);
   }
-  input:focus, select:focus{ outline:2px solid var(--brand); outline-offset:-1px; }
-  .field{ margin-bottom:0; }
-  .field-row{ display:flex; gap:12px; }
-  .field-row .field{ flex:1; min-width:0; }
+  input:focus{ outline:2px solid var(--brand); outline-offset:-1px; }
 
-  .scan-row{ display:flex; gap:10px; }
-  .scan-row input{ flex:1; min-width:0; }
-  .scan-btn{
-    display:flex; align-items:center; justify-content:center;
-    background: var(--surface-raised); color:var(--brand); border:1px solid var(--brand);
-    flex-shrink:0; width:46px; font-size:1.2rem; padding:0;
-  }
-
-  .posicao-active{
-    display:flex; justify-content:space-between; align-items:center;
-    background: var(--ok-bg); border:1px solid var(--ok); border-radius:5px;
-    padding: 10px 14px;
-  }
-  .posicao-active .val{ font-family:'Consolas','Courier New', monospace; font-weight:700; color:var(--ok); font-size:1.05rem; }
-  .posicao-active .lbl{ font-size:0.7rem; color:var(--ink-soft); text-transform:uppercase; letter-spacing:0.04em; }
-
-  .search-results{ max-height:240px; overflow-y:auto; border:1px solid var(--line); border-radius:5px; background:var(--surface-raised); margin-top:10px; }
+  .search-results{ max-height:280px; overflow-y:auto; border:1px solid var(--line); border-radius:5px; background:var(--surface-raised); margin-top:10px; }
   .prod-item{ padding:11px 12px; border-bottom:1px solid var(--line); cursor:pointer; display:flex; justify-content:space-between; gap:10px; }
   .prod-item:last-child{ border-bottom:none; }
   .prod-item:hover{ background: var(--surface); }
@@ -184,27 +157,7 @@
   }
   @keyframes spin{ to{ transform:rotate(360deg); } }
 
-  .modal-backdrop{
-    position:fixed; inset:0; background:rgba(15,25,35,0.55);
-    display:flex; align-items:center; justify-content:center; padding:20px; z-index:50;
-  }
-  .modal{ background:var(--surface); border-radius:8px; padding:22px; max-width:380px; width:100%; box-shadow:0 12px 40px rgba(0,0,0,0.25); }
-  .scanner-modal .modal{ max-width:480px; padding:0; overflow:hidden; background:#000; }
-  .scanner-video-wrap{ position:relative; width:100%; aspect-ratio: 3/4; background:#000; }
-  .scanner-video-wrap video{ width:100%; height:100%; object-fit:cover; display:block; }
-  .scanner-reticle{
-    position:absolute; left:12%; right:12%; top:32%; bottom:32%;
-    border:2px solid var(--ok); border-radius:6px; box-shadow:0 0 0 999px rgba(0,0,0,0.35);
-  }
-  .scanner-hint{
-    position:absolute; left:0; right:0; bottom:12px; text-align:center;
-    color:#fff; font-size:0.8rem; text-shadow:0 1px 3px rgba(0,0,0,0.8);
-  }
-  .scanner-footer{ padding:14px 16px; background:var(--surface); }
-  .scanner-error{ padding:20px 16px; color:#fff; font-size:0.9rem; }
-
   @media (max-width: 420px){
-    .field-row{ flex-direction:column; gap:14px; }
     .prod-item{ flex-direction:column; align-items:flex-start; gap:2px; }
     .prod-desc{ text-align:left; }
   }
@@ -239,24 +192,12 @@ if ('serviceWorker' in navigator) {
 let state = {
   loading: true,
   products: [],
-  posicao: '',
   search: '',
   selectedProduct: null,
-  lote: '',
-  fabricacao: '',
-  validade: '',
   qty: '',
   busy: false,
   log: []
 };
-
-// Insere as barras automaticamente enquanto digita: 03032026 -> 03/03/2026
-function maskData(v){
-  const digits = String(v).replace(/\D/g, '').slice(0, 8);
-  if(digits.length <= 2) return digits;
-  if(digits.length <= 4) return digits.slice(0, 2) + '/' + digits.slice(2);
-  return digits.slice(0, 2) + '/' + digits.slice(2, 4) + '/' + digits.slice(4);
-}
 
 function escapeHtml(s){
   return String(s == null ? '' : s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
@@ -292,14 +233,13 @@ function beep(freq, durationMs, volume){
     osc.stop(now + durationMs / 1000 + 0.02);
   } catch(err){ /* áudio bloqueado/indisponível — segue sem som */ }
 }
-function beepScan(){ beep(2200, 90, 0.25); }
 function beepOk(){ beep(1400, 90, 0.2); }
 function beepError(){ beep(220, 260, 0.25); }
 
 // ---- Busca ampla de produto (mesma lógica tolerante a acento/ordem do app de contagem) ----
 function normalizeStr(s){
   return String(s)
-    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .normalize('NFD').replace(/[̀-ͯ]/g, '')
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, ' ')
     .trim();
@@ -365,11 +305,10 @@ function downloadCsv(filename, headers, rows){
 }
 
 function finalizarEBaixarPlanilha(){
-  const rows = state.log.map(l => [l.posicao, l.sku, l.descricao, l.lote || '', l.fabricacao || '', l.validade || '', l.quantidade]);
+  const rows = state.log.map(l => [l.sku, l.descricao, l.quantidade]);
   const agora = new Date();
   const carimbo = agora.toISOString().slice(0, 16).replace(/[:T]/g, '-');
-  downloadCsv('lancamentos-posicao-' + carimbo + '.csv',
-    ['Posicao', 'SKU', 'Descricao', 'Lote', 'Fabricacao', 'Validade', 'Quantidade_kg'], rows);
+  downloadCsv('lancamentos-posicao-' + carimbo + '.csv', ['SKU', 'Descricao', 'Quantidade_kg'], rows);
   showToast('Planilha baixada com ' + state.log.length + ' lançamento(s).');
 }
 
@@ -381,18 +320,6 @@ function render(){
     c.innerHTML = `<div class="empty"><span class="spinner" style="border-color:rgba(0,0,0,0.12); border-top-color:var(--brand);"></span><br><br>Carregando produtos...</div>`;
     return;
   }
-
-  const posicaoBlock = state.posicao ? `
-    <div class="posicao-active">
-      <div><div class="lbl">Posição ativa</div><div class="val">${escapeHtml(state.posicao)}</div></div>
-      <button type="button" class="clear-sel" id="clear-posicao">✕</button>
-    </div>
-  ` : `
-    <div class="scan-row">
-      <input type="text" id="posicao-input" placeholder="Ex: A-12-03" value="${escapeHtml(state.posicao)}" autocomplete="off">
-      <button type="button" class="scan-btn" id="scan-posicao-btn" title="Escanear QR da posição"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8V6a2 2 0 0 1 2-2h2M4 16v2a2 2 0 0 0 2 2h2M20 8V6a2 2 0 0 0-2-2h-2M20 16v2a2 2 0 0 1-2 2h-2"></path><rect x="9" y="9" width="6" height="6" rx="0.8"></rect></svg></button>
-    </div>
-  `;
 
   let produtoBlock = '';
   if(state.selectedProduct){
@@ -409,9 +336,9 @@ function render(){
     const filtered = state.search.trim() === '' ? [] : searchProducts(state.search, state.products);
     produtoBlock = `
       <input type="text" id="search-input" placeholder="Código (SKU) ou nome do produto" value="${escapeHtml(state.search)}" autocomplete="off">
+      ${ state.search.trim() === '' ? '' : `
       <div class="search-results">
-        ${ state.search.trim() === '' ? `<div class="empty">Digite para buscar um produto.</div>`
-          : filtered.length === 0 ? `<div class="empty">Nenhum produto encontrado.</div>`
+        ${ filtered.length === 0 ? `<div class="empty">Nenhum produto encontrado.</div>`
           : filtered.map(p => `
               <div class="prod-item" data-sku="${escapeHtml(p.sku)}">
                 <span class="prod-sku">${escapeHtml(p.sku)}</span>
@@ -419,7 +346,7 @@ function render(){
               </div>
             `).join('')
         }
-      </div>
+      </div>` }
     `;
   }
 
@@ -434,9 +361,7 @@ function render(){
               <span class="desc">${escapeHtml(l.descricao)}</span>
               <span class="qty">${l.quantidade} kg</span>
             </div>
-            <div class="meta">
-              Posição ${escapeHtml(l.posicao)} · SKU ${escapeHtml(l.sku)}${l.lote ? ' · Lote ' + escapeHtml(l.lote) : ''}${l.validade ? ' · Validade ' + escapeHtml(l.validade) : ''}
-            </div>
+            <div class="meta">SKU ${escapeHtml(l.sku)}</div>
           </div>
         `).join('')}
         <button type="button" class="btn-secondary btn-block" id="finalizar-btn" style="margin-top:12px;">Finalizar e baixar planilha</button>
@@ -447,31 +372,8 @@ function render(){
   c.innerHTML = `
     <div class="panel">
       <div class="f-group">
-        <div class="f-label">Posição</div>
-        ${posicaoBlock}
-      </div>
-
-      <div class="f-group">
         <div class="f-label">Produto</div>
         ${produtoBlock}
-      </div>
-
-      <div class="f-group">
-        <div class="f-label">Lote *</div>
-        <input type="text" id="lote-input" placeholder="Número do lote" value="${escapeHtml(state.lote)}" required>
-      </div>
-
-      <div class="f-group">
-        <div class="field-row">
-          <div class="field">
-            <label>Fabricação</label>
-            <input type="text" id="fab-input" inputmode="numeric" placeholder="dd/mm/aaaa" maxlength="10" value="${escapeHtml(state.fabricacao)}">
-          </div>
-          <div class="field">
-            <label>Validade</label>
-            <input type="text" id="val-input" inputmode="numeric" placeholder="dd/mm/aaaa" maxlength="10" value="${escapeHtml(state.validade)}">
-          </div>
-        </div>
       </div>
 
       <div class="f-group">
@@ -492,19 +394,6 @@ function render(){
 }
 
 function attachEvents(){
-  const posicaoInput = document.getElementById('posicao-input');
-  if(posicaoInput){
-    posicaoInput.addEventListener('input', (e) => { state.posicao = e.target.value; });
-    posicaoInput.addEventListener('keydown', (e) => { if(e.key === 'Enter'){ state.posicao = e.target.value.trim(); render(); } });
-  }
-  const scanPosBtn = document.getElementById('scan-posicao-btn');
-  if(scanPosBtn) scanPosBtn.addEventListener('click', () => openScanner(['qr_code'], (value) => {
-    state.posicao = value.trim();
-    render();
-  }));
-  const clearPosicao = document.getElementById('clear-posicao');
-  if(clearPosicao) clearPosicao.addEventListener('click', () => { state.posicao = ''; render(); });
-
   const searchInput = document.getElementById('search-input');
   if(searchInput){
     searchInput.addEventListener('input', (e) => {
@@ -518,35 +407,12 @@ function attachEvents(){
         const sku = item.dataset.sku;
         state.selectedProduct = state.products.find(p => p.sku === sku);
         render();
+        setTimeout(() => { const q = document.getElementById('qty-input'); if(q) q.focus(); }, 0);
       });
     });
   }
   const clearProduto = document.getElementById('clear-produto');
   if(clearProduto) clearProduto.addEventListener('click', () => { state.selectedProduct = null; state.search = ''; render(); });
-
-  const loteInput = document.getElementById('lote-input');
-  if(loteInput) loteInput.addEventListener('input', (e) => { state.lote = e.target.value; });
-
-  // A máscara só é aplicada ao sair do campo (blur), não a cada tecla —
-  // reescrever o value durante a digitação faz o teclado numérico do
-  // Android voltar pra letras a cada caractere.
-  const fabInput = document.getElementById('fab-input');
-  if(fabInput){
-    fabInput.addEventListener('input', (e) => { state.fabricacao = e.target.value; });
-    fabInput.addEventListener('blur', (e) => {
-      e.target.value = maskData(e.target.value);
-      state.fabricacao = e.target.value;
-    });
-  }
-
-  const valInput = document.getElementById('val-input');
-  if(valInput){
-    valInput.addEventListener('input', (e) => { state.validade = e.target.value; });
-    valInput.addEventListener('blur', (e) => {
-      e.target.value = maskData(e.target.value);
-      state.validade = e.target.value;
-    });
-  }
 
   const qtyInput = document.getElementById('qty-input');
   if(qtyInput){
@@ -562,21 +428,15 @@ function attachEvents(){
 }
 
 async function doLancar(){
-  if(!state.posicao.trim()){ showToast('Escaneie ou digite a posição.', true); return; }
   if(!state.selectedProduct){ showToast('Selecione um produto.', true); return; }
-  if(!state.lote.trim()){ showToast('Informe o lote.', true); return; }
   const qtyVal = parseFloat(state.qty);
   if(!qtyVal || qtyVal <= 0){ showToast('Informe uma quantidade válida.', true); return; }
 
   state.busy = true; render();
   try{
     const payload = {
-      posicao: state.posicao.trim(),
       sku: state.selectedProduct.sku,
       descricao: state.selectedProduct.descricao,
-      lote: state.lote.trim() || null,
-      fabricacao: state.fabricacao || null,
-      validade: state.validade || null,
       quantidade: qtyVal
     };
     await lancarPosicao(payload);
@@ -584,9 +444,6 @@ async function doLancar(){
     showToast('Lançado: ' + qtyVal + ' kg — ' + state.selectedProduct.descricao);
     state.selectedProduct = null;
     state.search = '';
-    state.lote = '';
-    state.fabricacao = '';
-    state.validade = '';
     state.qty = '';
   } catch(err){
     showToast('Erro ao lançar: ' + err.message, true);
@@ -594,75 +451,6 @@ async function doLancar(){
   state.busy = false;
   render();
   setTimeout(() => { const s = document.getElementById('search-input'); if(s) s.focus(); }, 0);
-}
-
-// ---- Leitor de código (QR/barras) pela câmera — genérico, usado tanto
-// para a posição quanto reaproveitável para produto se precisar no futuro ----
-async function openScanner(formats, onDetected){
-  const backdrop = document.createElement('div');
-  backdrop.className = 'modal-backdrop scanner-modal';
-  backdrop.innerHTML = `<div class="modal"><div id="scanner-body"></div></div>`;
-  document.body.appendChild(backdrop);
-  const body = backdrop.querySelector('#scanner-body');
-
-  let stopped = false;
-  function close(stream){
-    stopped = true;
-    if(stream) stream.getTracks().forEach(t => t.stop());
-    backdrop.remove();
-  }
-  backdrop.addEventListener('click', (e) => { if(e.target === backdrop) close(); });
-
-  if(!('BarcodeDetector' in window)){
-    body.innerHTML = `
-      <div class="scanner-error">Leitor não suportado neste navegador. Digite manualmente.</div>
-      <div class="scanner-footer"><button class="btn-secondary btn-block" id="scanner-close">Fechar</button></div>
-    `;
-    body.querySelector('#scanner-close').addEventListener('click', () => close());
-    return;
-  }
-
-  let stream;
-  try{
-    stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
-  } catch(err){
-    body.innerHTML = `
-      <div class="scanner-error">Sem acesso à câmera: ${escapeHtml(err.message)}</div>
-      <div class="scanner-footer"><button class="btn-secondary btn-block" id="scanner-close">Fechar</button></div>
-    `;
-    body.querySelector('#scanner-close').addEventListener('click', () => close());
-    return;
-  }
-
-  body.innerHTML = `
-    <div class="scanner-video-wrap">
-      <video id="scanner-video" autoplay playsinline muted></video>
-      <div class="scanner-reticle"></div>
-      <div class="scanner-hint">Aponte a câmera para o QR code</div>
-    </div>
-    <div class="scanner-footer"><button class="btn-secondary btn-block" id="scanner-close">Cancelar</button></div>
-  `;
-  const video = body.querySelector('#scanner-video');
-  video.srcObject = stream;
-  body.querySelector('#scanner-close').addEventListener('click', () => close(stream));
-
-  const detector = new BarcodeDetector({ formats });
-
-  async function loop(){
-    if(stopped) return;
-    try{
-      const codes = await detector.detect(video);
-      if(codes.length > 0){
-        const value = codes[0].rawValue;
-        beepScan();
-        close(stream);
-        onDetected(value);
-        return;
-      }
-    } catch(err){ /* frame sem código — ignora e tenta o próximo */ }
-    requestAnimationFrame(loop);
-  }
-  requestAnimationFrame(loop);
 }
 
 (async function init(){

@@ -443,7 +443,7 @@ function renderPosicaoTable(rows){
   }
   tbody.innerHTML = rows.map(r => `
     <tr>
-      <td class="mono" data-label="Posição">${escapeHtml(r.posicao)}</td>
+      <td class="mono" data-label="Posição">${escapeHtml(r.posicao || '—')}</td>
       <td class="mono" data-label="SKU">${escapeHtml(r.sku)}</td>
       <td data-label="Descrição">${escapeHtml(r.descricao)}</td>
       <td data-label="Lote">${escapeHtml(r.lote || '—')}</td>
