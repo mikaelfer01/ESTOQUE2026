@@ -67,6 +67,11 @@
   .shell-nav a:hover{ background:rgba(255,255,255,0.08); color:#fff; }
   .shell-nav a.active{ background:var(--brand); color:#fff; }
 
+  .page-shell{
+    display:flex; flex-direction:column; justify-content:center;
+    min-height: calc(100vh - 61px); min-height: calc(100dvh - 61px);
+  }
+  .page-shell.top-align{ justify-content:flex-start; }
   .wrap{ max-width: 640px; width:100%; margin: 0 auto; padding: 14px 12px 24px; }
 
   h1{ font-size:1.15rem; margin: 0 0 10px; font-weight:700; letter-spacing: -0.01em; color:var(--ink); }
@@ -217,9 +222,11 @@
     </nav>
   </div>
 </header>
-<main class="wrap">
-  <h1>Lançamento por posição</h1>
-  <div id="content"></div>
+<main class="page-shell" id="pageShell">
+  <div class="wrap">
+    <h1>Lançamento por posição</h1>
+    <div id="content"></div>
+  </div>
 </main>
 <div class="toast" id="toast"></div>
 
@@ -368,6 +375,8 @@ function finalizarEBaixarPlanilha(){
 
 function render(){
   const c = document.getElementById('content');
+  const shell = document.getElementById('pageShell');
+  shell.classList.toggle('top-align', state.log.length > 0 || state.search.trim() !== '');
   if(state.loading){
     c.innerHTML = `<div class="empty"><span class="spinner" style="border-color:rgba(0,0,0,0.12); border-top-color:var(--brand);"></span><br><br>Carregando produtos...</div>`;
     return;
@@ -518,17 +527,26 @@ function attachEvents(){
   const loteInput = document.getElementById('lote-input');
   if(loteInput) loteInput.addEventListener('input', (e) => { state.lote = e.target.value; });
 
+  // A máscara só é aplicada ao sair do campo (blur), não a cada tecla —
+  // reescrever o value durante a digitação faz o teclado numérico do
+  // Android voltar pra letras a cada caractere.
   const fabInput = document.getElementById('fab-input');
-  if(fabInput) fabInput.addEventListener('input', (e) => {
-    e.target.value = maskData(e.target.value);
-    state.fabricacao = e.target.value;
-  });
+  if(fabInput){
+    fabInput.addEventListener('input', (e) => { state.fabricacao = e.target.value; });
+    fabInput.addEventListener('blur', (e) => {
+      e.target.value = maskData(e.target.value);
+      state.fabricacao = e.target.value;
+    });
+  }
 
   const valInput = document.getElementById('val-input');
-  if(valInput) valInput.addEventListener('input', (e) => {
-    e.target.value = maskData(e.target.value);
-    state.validade = e.target.value;
-  });
+  if(valInput){
+    valInput.addEventListener('input', (e) => { state.validade = e.target.value; });
+    valInput.addEventListener('blur', (e) => {
+      e.target.value = maskData(e.target.value);
+      state.validade = e.target.value;
+    });
+  }
 
   const qtyInput = document.getElementById('qty-input');
   if(qtyInput){
