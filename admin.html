@@ -56,12 +56,11 @@
   .shell-nav a:hover{ background:rgba(255,255,255,0.08); color:#fff; }
   .shell-nav a.active{ background:var(--brand); color:#fff; }
 
-  .wrap{ max-width:560px; margin:0 auto; padding:24px 12px 60px; }
-  .eyebrow{ font-size:0.72rem; font-weight:700; text-transform:uppercase; letter-spacing:0.06em; color:var(--brand-dark); margin-bottom:4px; }
-  h1{ font-size:1.4rem; margin:0 0 6px; color:var(--shell); }
-  .sub{ color:var(--ink-soft); font-size:0.9rem; margin-bottom:20px; }
-  .panel{ background:var(--surface); border:1px solid var(--line); border-radius:6px; padding:20px; box-shadow:0 1px 3px rgba(29,45,62,0.06); }
-  .count{ font-weight:700; font-size:1.05rem; margin-bottom:16px; color:var(--shell); }
+  .wrap{ max-width:560px; margin:0 auto; padding:16px 12px 32px; }
+  h1{ font-size:1.2rem; margin:0 0 12px; color:var(--shell); }
+  .sub{ color:var(--ink-soft); font-size:0.85rem; margin-bottom:10px; }
+  .panel{ background:var(--surface); border:1px solid var(--line); border-radius:6px; padding:16px; box-shadow:0 1px 3px rgba(29,45,62,0.06); }
+  .count{ font-weight:700; font-size:1.05rem; margin-bottom:12px; color:var(--shell); }
   button{
     font-family:inherit; cursor:pointer; border:none; border-radius:5px; font-weight:600;
     font-size:0.95rem; padding:12px 18px; width:100%; background:var(--brand); color:#fff;
@@ -79,11 +78,10 @@
 
   .danger-zone{
     background:var(--surface); border:1px solid var(--danger); border-radius:6px;
-    padding:20px; margin-top:24px; box-shadow:0 1px 3px rgba(29,45,62,0.06);
+    padding:16px; margin-top:14px; box-shadow:0 1px 3px rgba(29,45,62,0.06);
   }
-  .danger-zone .eyebrow{ color:var(--danger); }
   .danger-zone h2{ font-size:1.05rem; margin:0 0 6px; color:var(--shell); }
-  .danger-zone .sub{ margin-bottom:16px; }
+  .danger-zone .sub{ margin-bottom:12px; }
   .btn-danger{ background:var(--danger); }
   .btn-danger:hover{ background:#970000; }
 
@@ -115,28 +113,25 @@
   </div>
 </header>
 <div class="wrap">
-  <div class="eyebrow">Administração</div>
   <h1>Carregar produtos</h1>
-  <div class="sub">Isso lê data/produtos.json e substitui a lista de produtos no banco de dados. As contagens já lançadas não são afetadas.</div>
   <div class="panel">
-    <div class="count" id="count">carregando lista de data/produtos.json...</div>
+    <div class="count" id="count">carregando...</div>
     <button id="btn" disabled>Carregar produtos</button>
     <div class="status" id="status"></div>
   </div>
   <div class="danger-zone">
-    <div class="eyebrow">Zona de risco</div>
-    <h2>Apagar todo o histórico de contagens</h2>
-    <div class="sub">Remove permanentemente todas as sessões e todos os lançamentos já feitos (aberta ou finalizada). A lista de produtos não é afetada. Essa ação não pode ser desfeita.</div>
+    <h2>Apagar histórico de contagens</h2>
+    <div class="sub">Não afeta a lista de produtos. Irreversível.</div>
     <button class="btn-danger" id="btn-reset">Apagar todo o histórico</button>
   </div>
 
-  <a class="back" href="index.html">&larr; Voltar para a contagem</a>
+  <a class="back" href="index.html">&larr; Voltar</a>
 </div>
 
 <div class="modal-backdrop" id="reset-modal-backdrop" style="display:none;">
   <div class="modal">
     <h3>Confirmar exclusão</h3>
-    <p>Isso vai apagar <strong>todas</strong> as sessões e lançamentos de contagem, de forma permanente. Digite <strong>APAGAR</strong> abaixo para confirmar.</p>
+    <p>Apaga <strong>todo</strong> o histórico, permanentemente. Digite <strong>APAGAR</strong> para confirmar.</p>
     <input type="text" id="reset-confirm-input" placeholder="Digite APAGAR" autocomplete="off">
     <div class="modal-actions">
       <button id="reset-cancel-btn" style="background:#fff; color:var(--ink); border:1px solid var(--line);">Cancelar</button>
@@ -157,12 +152,12 @@ async function init() {
   try {
     const res = await fetch('data/produtos.json');
     PRODUCTS = await res.json();
-    document.getElementById('count').textContent = PRODUCTS.length + ' produtos prontos para carregar';
+    document.getElementById('count').textContent = PRODUCTS.length + ' produtos';
     const btn = document.getElementById('btn');
     btn.disabled = false;
     btn.textContent = 'Carregar ' + PRODUCTS.length + ' produtos';
   } catch (err) {
-    document.getElementById('count').textContent = 'Erro ao ler data/produtos.json: ' + err.message;
+    document.getElementById('count').textContent = 'Erro: ' + err.message;
   }
 }
 
@@ -181,7 +176,7 @@ document.getElementById('btn').addEventListener('click', async () => {
     const data = await res.json();
     if (data.error) throw new Error(data.error);
     statusEl.className = 'status ok';
-    statusEl.textContent = 'Pronto! ' + data.count + ' produtos gravados no banco de dados.';
+    statusEl.textContent = data.count + ' produtos gravados.';
     btn.textContent = 'Carregado com sucesso';
   } catch (err) {
     statusEl.className = 'status err';
@@ -223,7 +218,7 @@ resetConfirmBtn.addEventListener('click', async () => {
     if (data.error) throw new Error(data.error);
     resetModalBackdrop.style.display = 'none';
     statusEl.className = 'status ok';
-    statusEl.textContent = 'Histórico de contagens apagado com sucesso.';
+    statusEl.textContent = 'Histórico apagado.';
   } catch (err) {
     resetModalBackdrop.style.display = 'none';
     statusEl.className = 'status err';

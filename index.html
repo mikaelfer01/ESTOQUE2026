@@ -73,34 +73,33 @@
     min-height: calc(100vh - 61px); min-height: calc(100dvh - 61px);
   }
   .page-shell.top-align{ justify-content:flex-start; }
-  .wrap{ max-width: 640px; width:100%; margin: 0 auto; padding: 20px 12px 40px; }
+  .wrap{ max-width: 640px; width:100%; margin: 0 auto; padding: 14px 12px 24px; }
 
-  .stats-row{ display:grid; grid-template-columns: repeat(2, 1fr); gap:10px; margin-bottom:18px; }
+  .stats-row{ display:grid; grid-template-columns: repeat(2, 1fr); gap:10px; margin-bottom:12px; }
   .stat-card{
     background: var(--surface); border:1px solid var(--line); border-radius:6px;
-    padding:14px; box-shadow:0 1px 3px rgba(29,45,62,0.06); border-top:3px solid var(--brand);
+    padding:11px 14px; box-shadow:0 1px 3px rgba(29,45,62,0.06); border-top:3px solid var(--brand);
   }
-  .stat-card .num{ font-size:1.5rem; font-weight:800; color:var(--brand); font-family:'Consolas','Courier New', monospace; }
-  .stat-card .lbl{ font-size:0.72rem; color:var(--ink-soft); text-transform:uppercase; letter-spacing:0.04em; margin-top:2px; }
+  .stat-card .num{ font-size:1.35rem; font-weight:800; color:var(--brand); font-family:'Consolas','Courier New', monospace; }
+  .stat-card .lbl{ font-size:0.7rem; color:var(--ink-soft); text-transform:uppercase; letter-spacing:0.04em; margin-top:2px; }
 
   .hero-icon{
-    width:56px; height:56px; border-radius:50%; background:rgba(47,129,247,0.14); color:var(--brand);
-    display:flex; align-items:center; justify-content:center; font-size:1.6rem; margin:0 auto 14px;
+    width:44px; height:44px; border-radius:50%; background:rgba(47,129,247,0.14); color:var(--brand);
+    display:flex; align-items:center; justify-content:center; font-size:1.6rem; margin:0 auto 10px;
     border:1px solid var(--brand);
   }
 
   h1{
-    font-size:1.5rem; margin: 0 0 4px; font-weight:700;
+    font-size:1.2rem; margin: 0 0 10px; font-weight:700;
     letter-spacing: -0.01em; color:var(--ink);
   }
-  .sub{ color:var(--ink-soft); font-size:0.9rem; margin-bottom:18px; }
 
   .panel{
     background: var(--surface);
     border: 1px solid var(--line);
     border-radius: 6px;
-    padding: 18px;
-    margin-bottom: 16px;
+    padding: 14px;
+    margin-bottom: 12px;
     box-shadow: 0 1px 3px rgba(29,45,62,0.06);
   }
 
@@ -194,13 +193,13 @@
 
   .header-bar{
     display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; gap:10px;
-    margin-bottom:16px; padding-bottom:14px; border-bottom:1px solid var(--line);
+    margin-bottom:12px; padding-bottom:10px; border-bottom:1px solid var(--line);
   }
   .header-bar .sess-label{ font-weight:700; font-size:1rem; word-break:break-word; }
   .header-bar .sess-sub{ font-size:0.75rem; color:var(--ok); font-weight:600; }
   .header-bar #finish-btn{ flex-shrink:0; }
 
-  .log{ margin-top:18px; }
+  .log{ margin-top:14px; }
   .log h3{ font-size:0.72rem; text-transform:uppercase; letter-spacing:0.05em; color:var(--ink-soft); margin-bottom:8px; font-weight:700; }
   .log-item{
     display:flex; justify-content:space-between; padding:10px 0;
@@ -308,7 +307,7 @@ function renderSessions(){
     sessionsHtml = `
       <div class="empty">
         <div class="hero-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="4" width="12" height="17" rx="1.5"></rect><rect x="9" y="2.5" width="6" height="3" rx="1"></rect><line x1="8.5" y1="10" x2="15.5" y2="10"></line><line x1="8.5" y1="13.5" x2="15.5" y2="13.5"></line><line x1="8.5" y1="17" x2="12.5" y2="17"></line></svg></div>
-        Nenhuma contagem aberta no momento.<br>Comece uma nova abaixo.
+        Nenhuma contagem aberta.
       </div>`;
   } else {
     sessionsHtml = state.openSessions.map(s => `
@@ -333,7 +332,6 @@ function renderSessions(){
       </div>
     </div>
     <h1>Iniciar contagem</h1>
-    <div class="sub">Entre numa contagem já aberta por outro colega, ou comece uma nova.</div>
     <div class="panel">
       <div class="section-label">Contagens em aberto</div>
       ${sessionsHtml}
@@ -371,15 +369,15 @@ function renderCounting(){
   } else {
     selBlock = `
       <div class="field">
-        <label>Buscar produto (SKU ou descrição)</label>
+        <label>Produto</label>
         <div class="scan-row">
           <input type="text" id="search-input" placeholder="Ex: 4521 ou filé de peito" value="${escapeHtml(state.search)}" autocomplete="off">
           <button type="button" class="scan-btn" id="scan-btn" title="Escanear código de barras"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8V6a2 2 0 0 1 2-2h2M4 16v2a2 2 0 0 0 2 2h2M20 8V6a2 2 0 0 0-2-2h-2M20 16v2a2 2 0 0 1-2 2h-2"></path><circle cx="12" cy="12" r="3.2"></circle></svg></button>
         </div>
       </div>
+      ${ state.search.trim() === '' ? '' : `
       <div class="search-results">
-        ${ state.search.trim() === '' ? `<div class="empty">Digite para buscar um produto.</div>`
-          : filtered.length === 0 ? `<div class="empty">Nenhum produto encontrado.</div>`
+        ${ filtered.length === 0 ? `<div class="empty">Nenhum produto encontrado.</div>`
           : filtered.map(p => `
               <div class="prod-item" data-sku="${escapeHtml(p.sku)}">
                 <span class="prod-sku">${escapeHtml(p.sku)}</span>
@@ -387,7 +385,7 @@ function renderCounting(){
               </div>
             `).join('')
         }
-      </div>
+      </div>` }
     `;
   }
 
@@ -395,7 +393,7 @@ function renderCounting(){
   if(state.sessionLog.length > 0){
     logBlock = `
       <div class="log">
-        <h3>LANÇAMENTOS NESTA SESSÃO (VOCÊ)</h3>
+        <h3>Lançamentos</h3>
         ${state.sessionLog.slice().reverse().map(l => `
           <div class="log-item">
             <span>${escapeHtml(l.desc)} <span style="color:var(--ink-soft); font-family:'Courier New',monospace;">(${escapeHtml(l.sku)})</span></span>
@@ -409,8 +407,8 @@ function renderCounting(){
   const modal = state.confirmFinish ? `
     <div class="modal-backdrop" id="modal-backdrop">
       <div class="modal">
-        <h3>Finalizar esta contagem?</h3>
-        <p style="color:var(--ink-soft); font-size:0.9rem;">Depois de finalizada, ninguém mais poderá lançar quantidades nesta sessão. A coluna fica registrada na planilha normalmente.</p>
+        <h3>Finalizar contagem?</h3>
+        <p style="color:var(--ink-soft); font-size:0.9rem;">Ninguém mais poderá lançar nesta sessão.</p>
         <div class="modal-actions">
           <button class="btn-secondary" id="cancel-finish">Cancelar</button>
           <button class="btn-danger" id="confirm-finish-btn">Finalizar</button>
@@ -423,7 +421,7 @@ function renderCounting(){
     <div class="header-bar">
       <div>
         <div class="sess-label">${escapeHtml(state.session.label)}</div>
-        <div class="sess-sub">contagem em andamento</div>
+        <div class="sess-sub">● aberta</div>
       </div>
       <button class="btn-danger" id="finish-btn">Finalizar contagem</button>
     </div>

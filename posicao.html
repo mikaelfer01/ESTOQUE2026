@@ -67,23 +67,19 @@
   .shell-nav a:hover{ background:rgba(255,255,255,0.08); color:#fff; }
   .shell-nav a.active{ background:var(--brand); color:#fff; }
 
-  .wrap{ max-width: 640px; width:100%; margin: 0 auto; padding: 20px 12px 60px; }
+  .wrap{ max-width: 640px; width:100%; margin: 0 auto; padding: 14px 12px 24px; }
 
-  h1{ font-size:1.5rem; margin: 0 0 4px; font-weight:700; letter-spacing: -0.01em; color:var(--ink); }
-  .sub{ color:var(--ink-soft); font-size:0.9rem; margin-bottom:18px; }
+  h1{ font-size:1.15rem; margin: 0 0 10px; font-weight:700; letter-spacing: -0.01em; color:var(--ink); }
 
   .panel{
     background: var(--surface); border: 1px solid var(--line); border-radius: 6px;
-    padding: 16px; margin-bottom: 14px; box-shadow: 0 1px 3px rgba(29,45,62,0.06);
+    padding: 4px 14px; margin-bottom: 12px; box-shadow: 0 1px 3px rgba(29,45,62,0.06);
   }
-  .section-label{
-    font-size:0.72rem; font-weight:700; text-transform:uppercase; letter-spacing:0.05em;
-    color:var(--brand); margin-bottom:10px; display:flex; align-items:center; gap:6px;
-  }
-  .section-label .n{
-    display:inline-flex; align-items:center; justify-content:center;
-    width:18px; height:18px; border-radius:50%; background:var(--brand); color:#fff;
-    font-size:0.68rem; font-weight:800;
+  .f-group{ padding: 11px 0; border-bottom:1px solid var(--line); }
+  .f-group:last-child{ border-bottom:none; }
+  .f-label{
+    font-size:0.7rem; font-weight:700; text-transform:uppercase; letter-spacing:0.05em;
+    color:var(--ink-soft); margin-bottom:8px;
   }
 
   button{
@@ -99,14 +95,14 @@
   .btn-block{ width:100%; }
   button:disabled{ opacity:0.5; cursor:not-allowed; }
 
-  .field label{ display:block; font-size:0.8rem; color:var(--ink-soft); margin-bottom:6px; font-weight:600; }
+  .field label{ display:block; font-size:0.76rem; color:var(--ink-soft); margin-bottom:5px; font-weight:600; }
 
   /* Estilo base para TODOS os campos de texto/data/número da página —
      antes só valia para inputs dentro de .field, deixando "Posição" e
      "Buscar produto" (fora de .field) pequenos e sem respiro. */
   input[type="text"], input[type="number"], input[type="date"], select{
-    width:100%; min-height:52px; padding:12px 14px; border:1px solid var(--line);
-    border-radius:6px; font-size:1.05rem; background:var(--surface-raised); color:var(--ink);
+    width:100%; min-height:46px; padding:10px 12px; border:1px solid var(--line);
+    border-radius:6px; font-size:1rem; background:var(--surface-raised); color:var(--ink);
   }
   input:focus, select:focus{ outline:2px solid var(--brand); outline-offset:-1px; }
   .field{ margin-bottom:0; }
@@ -118,7 +114,7 @@
   .scan-btn{
     display:flex; align-items:center; justify-content:center;
     background: var(--surface-raised); color:var(--brand); border:1px solid var(--brand);
-    flex-shrink:0; width:52px; font-size:1.3rem; padding:0;
+    flex-shrink:0; width:46px; font-size:1.2rem; padding:0;
   }
 
   .posicao-active{
@@ -223,7 +219,6 @@
 </header>
 <main class="wrap">
   <h1>Lançamento por posição</h1>
-  <div class="sub">Escaneie o QR code da posição, informe o produto, lote, fabricação/validade e a quantidade.</div>
   <div id="content"></div>
 </main>
 <div class="toast" id="toast"></div>
@@ -423,7 +418,7 @@ function render(){
   if(state.log.length > 0){
     logBlock = `
       <div class="log">
-        <h3>LANÇAMENTOS NESTA SESSÃO</h3>
+        <h3>Lançamentos</h3>
         ${state.log.slice().reverse().map(l => `
           <div class="log-item">
             <div class="top">
@@ -442,41 +437,40 @@ function render(){
 
   c.innerHTML = `
     <div class="panel">
-      <div class="section-label"><span class="n">1</span> Posição (leitura de QR)</div>
-      ${posicaoBlock}
-    </div>
+      <div class="f-group">
+        <div class="f-label">Posição</div>
+        ${posicaoBlock}
+      </div>
 
-    <div class="panel">
-      <div class="section-label"><span class="n">2</span> Produto (código ou nome)</div>
-      ${produtoBlock}
-    </div>
+      <div class="f-group">
+        <div class="f-label">Produto</div>
+        ${produtoBlock}
+      </div>
 
-    <div class="panel">
-      <div class="section-label"><span class="n">3</span> Lote *</div>
-      <div class="field">
+      <div class="f-group">
+        <div class="f-label">Lote *</div>
         <input type="text" id="lote-input" placeholder="Número do lote" value="${escapeHtml(state.lote)}" required>
       </div>
-    </div>
 
-    <div class="panel">
-      <div class="section-label"><span class="n">4</span> Fabricação e validade</div>
-      <div class="field-row">
-        <div class="field">
-          <label>Fabricação</label>
-          <input type="text" id="fab-input" inputmode="numeric" placeholder="dd/mm/aaaa" maxlength="10" value="${escapeHtml(state.fabricacao)}">
-        </div>
-        <div class="field">
-          <label>Validade</label>
-          <input type="text" id="val-input" inputmode="numeric" placeholder="dd/mm/aaaa" maxlength="10" value="${escapeHtml(state.validade)}">
+      <div class="f-group">
+        <div class="field-row">
+          <div class="field">
+            <label>Fabricação</label>
+            <input type="text" id="fab-input" inputmode="numeric" placeholder="dd/mm/aaaa" maxlength="10" value="${escapeHtml(state.fabricacao)}">
+          </div>
+          <div class="field">
+            <label>Validade</label>
+            <input type="text" id="val-input" inputmode="numeric" placeholder="dd/mm/aaaa" maxlength="10" value="${escapeHtml(state.validade)}">
+          </div>
         </div>
       </div>
-    </div>
 
-    <div class="panel">
-      <div class="section-label"><span class="n">5</span> Quantidade</div>
-      <div class="qty-readout">
-        <input type="number" inputmode="decimal" step="any" min="0" id="qty-input" placeholder="0.0" value="${escapeHtml(state.qty)}">
-        <div class="unit">kg</div>
+      <div class="f-group">
+        <div class="f-label">Quantidade</div>
+        <div class="qty-readout">
+          <input type="number" inputmode="decimal" step="any" min="0" id="qty-input" placeholder="0.0" value="${escapeHtml(state.qty)}">
+          <div class="unit">kg</div>
+        </div>
       </div>
     </div>
 
@@ -603,10 +597,7 @@ async function openScanner(formats, onDetected){
 
   if(!('BarcodeDetector' in window)){
     body.innerHTML = `
-      <div class="scanner-error">
-        <strong>Leitor de código não é suportado neste navegador.</strong><br><br>
-        Digite o valor manualmente no campo.
-      </div>
+      <div class="scanner-error">Leitor não suportado neste navegador. Digite manualmente.</div>
       <div class="scanner-footer"><button class="btn-secondary btn-block" id="scanner-close">Fechar</button></div>
     `;
     body.querySelector('#scanner-close').addEventListener('click', () => close());
@@ -618,11 +609,7 @@ async function openScanner(formats, onDetected){
     stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
   } catch(err){
     body.innerHTML = `
-      <div class="scanner-error">
-        <strong>Não foi possível acessar a câmera.</strong><br><br>
-        ${escapeHtml(err.message)}<br><br>
-        Verifique se a permissão de câmera está liberada para o site.
-      </div>
+      <div class="scanner-error">Sem acesso à câmera: ${escapeHtml(err.message)}</div>
       <div class="scanner-footer"><button class="btn-secondary btn-block" id="scanner-close">Fechar</button></div>
     `;
     body.querySelector('#scanner-close').addEventListener('click', () => close());
