@@ -103,6 +103,27 @@
   }
   input:focus{ outline:2px solid var(--brand); outline-offset:-1px; }
 
+  .session-row{
+    display:flex; justify-content:space-between; align-items:center;
+    padding:12px 14px; border:1px solid var(--line); border-radius:5px;
+    background:var(--surface); margin-bottom:8px; border-left:3px solid var(--brand);
+  }
+  .session-row .lbl{ font-weight:700; font-size:0.92rem; }
+  .session-row .status{ font-size:0.75rem; color:var(--warning); font-weight:600; }
+
+  .header-bar{
+    display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; gap:10px;
+    margin-bottom:12px; padding-bottom:10px; border-bottom:1px solid var(--line);
+  }
+  .header-bar .sess-label{ font-weight:700; font-size:1rem; word-break:break-word; }
+  .header-bar .sess-sub{ font-size:0.75rem; color:var(--ok); font-weight:600; }
+  .header-bar #finish-session-btn{ flex-shrink:0; }
+
+  .btn-danger{ background: var(--danger); color:#fff; }
+  .btn-danger:hover{ background:#970000; }
+  .modal-actions{ display:flex; gap:10px; margin-top:18px; }
+  .modal-actions button{ flex:1; }
+
   .modal-backdrop{
     position:fixed; inset:0; background:rgba(15,25,35,0.55);
     display:flex; align-items:center; justify-content:center; padding:20px; z-index:50;
@@ -226,14 +247,17 @@ if ('serviceWorker' in navigator) {
 </script>
 <script>
 let state = {
-  loading: true,
+  view: 'loading', // loading | sessions | launching
   products: [],
+  openSessions: [],
+  session: null, // {id, label}
   posicao: '',
   search: '',
   selectedProduct: null,
   qty: '',
   busy: false,
-  log: []
+  log: [],
+  confirmFinish: false
 };
 
 function escapeHtml(s){
@@ -315,6 +339,31 @@ async function getProducts(){
   return data;
 }
 
+async function getOpenSessions(){
+  const res = await fetch('/api/sessions?tipo=posicao');
+  const data = await res.json();
+  if(data.error) throw new Error(data.error);
+  return data;
+}
+
+async function startSession(){
+  const res = await fetch('/api/sessions', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ tipo: 'posicao' })
+  });
+  const data = await res.json();
+  if(data.error) throw new Error(data.error);
+  return data;
+}
+
+async function finishSession(sessionId){
+  const res = await fetch(`/api/sessions/${sessionId}/finish`, { method: 'POST' });
+  const data = await res.json();
+  if(data.error) throw new Error(data.error);
+  return data;
+}
+
 async function lancarPosicao(payload){
   const res = await fetch('/api/posicao', {
     method: 'POST',
@@ -342,23 +391,111 @@ function downloadCsv(filename, headers, rows){
   setTimeout(() => URL.revokeObjectURL(url), 4000);
 }
 
-function finalizarEBaixarPlanilha(){
-  const rows = state.log.map(l => [l.posicao, l.sku, l.descricao, l.quantidade]);
-  const agora = new Date();
-  const carimbo = agora.toISOString().slice(0, 16).replace(/[:T]/g, '-');
-  downloadCsv('lancamentos-posicao-' + carimbo + '.csv', ['Posicao', 'SKU', 'Descricao', 'Quantidade_kg'], rows);
-  showToast('Planilha baixada com ' + state.log.length + ' lançamento(s).');
+async function baixarPlanilhaSessao(sessionId, label){
+  const res = await fetch(`/api/posicao?sessionId=${encodeURIComponent(sessionId)}`);
+  const data = await res.json();
+  if(data.error) throw new Error(data.error);
+  const rows = data.lancamentos.map(l => [l.posicao, l.sku, l.descricao, Number(l.quantidade)]);
+  const nomeArquivo = 'lancamentos-posicao-' + label.replace(/[^0-9a-zA-Z]+/g, '-') + '.csv';
+  downloadCsv(nomeArquivo, ['Posicao', 'SKU', 'Descricao', 'Quantidade_kg'], rows);
+}
+
+async function loadSessionsScreen(){
+  state.view = 'loading'; render();
+  try{
+    const [prodRes, sessRes] = await Promise.all([getProducts(), getOpenSessions()]);
+    state.products = prodRes.products;
+    state.openSessions = sessRes.sessions;
+    state.view = 'sessions';
+  } catch(err){
+    showToast('Erro ao carregar: ' + err.message, true);
+    state.view = 'sessions';
+    state.openSessions = [];
+  }
+  render();
 }
 
 function render(){
   const c = document.getElementById('content');
   const shell = document.getElementById('pageShell');
-  shell.classList.toggle('top-align', state.log.length > 0 || state.search.trim() !== '');
-  if(state.loading){
-    c.innerHTML = `<div class="empty"><span class="spinner" style="border-color:rgba(0,0,0,0.12); border-top-color:var(--brand);"></span><br><br>Carregando produtos...</div>`;
+  shell.classList.toggle('top-align', state.view === 'launching');
+
+  if(state.view === 'loading'){
+    c.innerHTML = `<div class="empty"><span class="spinner" style="border-color:rgba(0,0,0,0.12); border-top-color:var(--brand);"></span><br><br>Carregando...</div>`;
     return;
   }
+  if(state.view === 'sessions'){
+    c.innerHTML = renderSessions();
+    attachSessionEvents();
+    return;
+  }
+  if(state.view === 'launching'){
+    c.innerHTML = renderLaunching();
+    attachLaunchingEvents();
+    return;
+  }
+}
 
+function renderSessions(){
+  let sessionsHtml = '';
+  if(state.openSessions.length === 0){
+    sessionsHtml = `<div class="empty">Nenhuma sessão aberta.</div>`;
+  } else {
+    sessionsHtml = state.openSessions.map(s => `
+      <div class="session-row">
+        <div>
+          <div class="lbl">${escapeHtml(s.label)}</div>
+          <div class="status">● aberta</div>
+        </div>
+        <button class="btn-secondary" data-join="${escapeHtml(s.id)}" data-label="${escapeHtml(s.label)}">Entrar</button>
+      </div>
+    `).join('');
+  }
+  return `
+    <div class="panel">
+      <div class="f-label">Sessões abertas</div>
+      ${sessionsHtml}
+    </div>
+    <button class="btn-primary btn-block" id="new-session" ${state.busy ? 'disabled' : ''}>
+      ${state.busy ? '<span class="spinner"></span>' : '+ Iniciar nova sessão'}
+    </button>
+  `;
+}
+
+function attachSessionEvents(){
+  document.getElementById('new-session').addEventListener('click', async () => {
+    state.busy = true; render();
+    try{
+      const r = await startSession();
+      state.session = { id: r.sessionId, label: r.label };
+      state.log = [];
+      state.posicao = '';
+      state.selectedProduct = null;
+      state.search = '';
+      state.view = 'launching';
+      showToast('Sessão iniciada: ' + r.label);
+    } catch(err){
+      showToast('Erro ao iniciar sessão: ' + err.message, true);
+    }
+    state.busy = false;
+    render();
+  });
+
+  document.querySelectorAll('[data-join]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      state.session = { id: btn.dataset.join, label: btn.dataset.label };
+      state.log = [];
+      state.posicao = '';
+      state.selectedProduct = null;
+      state.search = '';
+      state.view = 'launching';
+      showToast('Você entrou na sessão: ' + btn.dataset.label);
+      render();
+    });
+  });
+}
+
+function renderLaunching(){
   const posicaoBlock = state.posicao ? `
     <div class="posicao-active">
       <div><div class="lbl">Posição ativa</div><div class="val">${escapeHtml(state.posicao)}</div></div>
@@ -404,7 +541,7 @@ function render(){
   if(state.log.length > 0){
     logBlock = `
       <div class="log">
-        <h3>Lançamentos</h3>
+        <h3>Lançamentos (você)</h3>
         ${state.log.slice().reverse().map(l => `
           <div class="log-item">
             <div class="top">
@@ -414,12 +551,31 @@ function render(){
             <div class="meta">Posição ${escapeHtml(l.posicao)} · SKU ${escapeHtml(l.sku)}</div>
           </div>
         `).join('')}
-        <button type="button" class="btn-secondary btn-block" id="finalizar-btn" style="margin-top:12px;">Finalizar e baixar planilha</button>
       </div>
     `;
   }
 
-  c.innerHTML = `
+  const modal = state.confirmFinish ? `
+    <div class="modal-backdrop" id="modal-backdrop">
+      <div class="modal">
+        <h3>Finalizar sessão?</h3>
+        <p style="color:var(--ink-soft); font-size:0.9rem;">Ninguém mais poderá lançar nesta sessão. A planilha com todos os lançamentos é baixada em seguida.</p>
+        <div class="modal-actions">
+          <button class="btn-secondary" id="cancel-finish">Cancelar</button>
+          <button class="btn-danger" id="confirm-finish-btn">Finalizar</button>
+        </div>
+      </div>
+    </div>
+  ` : '';
+
+  return `
+    <div class="header-bar">
+      <div>
+        <div class="sess-label">${escapeHtml(state.session.label)}</div>
+        <div class="sess-sub">● aberta</div>
+      </div>
+      <button class="btn-danger" id="finish-session-btn">Finalizar</button>
+    </div>
     <div class="panel">
       <div class="f-group">
         <div class="f-label">Posição</div>
@@ -444,11 +600,11 @@ function render(){
       ${state.busy ? '<span class="spinner"></span>' : 'Lançar'}
     </button>
     ${logBlock}
+    ${modal}
   `;
-  attachEvents();
 }
 
-function attachEvents(){
+function attachLaunchingEvents(){
   const posicaoInput = document.getElementById('posicao-input');
   if(posicaoInput){
     posicaoInput.addEventListener('input', (e) => { state.posicao = e.target.value; });
@@ -491,8 +647,34 @@ function attachEvents(){
   const lancarBtn = document.getElementById('lancar-btn');
   if(lancarBtn) lancarBtn.addEventListener('click', doLancar);
 
-  const finalizarBtn = document.getElementById('finalizar-btn');
-  if(finalizarBtn) finalizarBtn.addEventListener('click', finalizarEBaixarPlanilha);
+  const finishBtn = document.getElementById('finish-session-btn');
+  if(finishBtn) finishBtn.addEventListener('click', () => { state.confirmFinish = true; render(); });
+
+  const cancelFinish = document.getElementById('cancel-finish');
+  if(cancelFinish) cancelFinish.addEventListener('click', () => { state.confirmFinish = false; render(); });
+
+  const confirmFinishBtn = document.getElementById('confirm-finish-btn');
+  if(confirmFinishBtn) confirmFinishBtn.addEventListener('click', async () => {
+    state.busy = true;
+    try{
+      await finishSession(state.session.id);
+      try{
+        await baixarPlanilhaSessao(state.session.id, state.session.label);
+        showToast('Sessão finalizada. Planilha baixada.');
+      } catch(csvErr){
+        showToast('Sessão finalizada, mas não deu pra gerar a planilha: ' + csvErr.message, true);
+      }
+      state.confirmFinish = false;
+      state.session = null;
+      await loadSessionsScreen();
+      return;
+    } catch(err){
+      showToast('Erro ao finalizar: ' + err.message, true);
+    }
+    state.busy = false;
+    state.confirmFinish = false;
+    render();
+  });
 }
 
 async function doLancar(){
@@ -504,6 +686,7 @@ async function doLancar(){
   state.busy = true; render();
   try{
     const payload = {
+      sessionId: state.session.id,
       posicao: state.posicao.trim(),
       sku: state.selectedProduct.sku,
       descricao: state.selectedProduct.descricao,
@@ -591,16 +774,7 @@ async function openScanner(formats, onDetected){
   requestAnimationFrame(loop);
 }
 
-(async function init(){
-  try{
-    const data = await getProducts();
-    state.products = data.products;
-  } catch(err){
-    showToast('Erro ao carregar produtos: ' + err.message, true);
-  }
-  state.loading = false;
-  render();
-})();
+loadSessionsScreen();
 </script>
 </body>
 </html>
