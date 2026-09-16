@@ -99,6 +99,16 @@
   .session-stats div{ font-size:0.78rem; color:var(--ink-soft); }
   .session-stats b{ color:var(--shell); font-size:0.95rem; display:block; }
 
+  .card-actions{ padding:10px 16px; border-top:1px solid var(--line); }
+  .btn-download{
+    display:block; width:100%; text-align:center; cursor:pointer;
+    background:var(--surface); color:var(--brand-dark); border:1px solid var(--brand);
+    border-radius:5px; font-weight:600; font-size:0.82rem; padding:8px 10px;
+    font-family:inherit; transition:background 0.12s ease;
+  }
+  .btn-download:hover{ background:#eef6ff; }
+  .status-badge.finalizada{ background:var(--ok-bg); color:var(--ok); }
+
   .feed{ max-height:260px; overflow-y:auto; }
   .feed-item{ padding:9px 16px; border-bottom:1px solid #f0f1f2; font-size:0.85rem; display:flex; justify-content:space-between; gap:10px; }
   .feed-item:last-child{ border-bottom:none; }
@@ -151,6 +161,16 @@
 
   <div class="section-title">Lançamentos por posição abertos</div>
   <div class="sessions-grid" id="posicao-grid">
+    <div class="empty"><span class="spinner"></span> Carregando...</div>
+  </div>
+
+  <div class="section-title">Contagens finalizadas recentemente</div>
+  <div class="sessions-grid" id="contagem-finalizadas-grid">
+    <div class="empty"><span class="spinner"></span> Carregando...</div>
+  </div>
+
+  <div class="section-title">Sessões por posição finalizadas recentemente</div>
+  <div class="sessions-grid" id="posicao-finalizadas-grid">
     <div class="empty"><span class="spinner"></span> Carregando...</div>
   </div>
 </main>
@@ -210,6 +230,9 @@ function contagemCard(session){
         <div><b>${totalQtd.toLocaleString('pt-BR', {maximumFractionDigits:2})}</b>kg</div>
       </div>
       <div class="feed">${feed}</div>
+      <div class="card-actions">
+        <button type="button" class="btn-download" data-download-tipo="contagem" data-download-id="${escapeHtml(session.id)}" data-download-label="${escapeHtml(session.label)}">Baixar CSV</button>
+      </div>
     </div>
   `;
 }
@@ -243,15 +266,81 @@ function posicaoCard(session){
         <div><b>${totalQtd.toLocaleString('pt-BR', {maximumFractionDigits:2})}</b>kg</div>
       </div>
       <div class="feed">${feed}</div>
+      <div class="card-actions">
+        <button type="button" class="btn-download" data-download-tipo="posicao" data-download-id="${escapeHtml(session.id)}" data-download-label="${escapeHtml(session.label)}">Baixar CSV</button>
+      </div>
     </div>
   `;
 }
 
+function finishedCard(session, tipo){
+  return `
+    <div class="session-card">
+      <div class="session-card-head">
+        <div>
+          <div class="label">${escapeHtml(session.label)}</div>
+          <div class="sub">${tipo === 'contagem' ? 'Contagem' : 'Por posição'} · finalizada às ${fmtTime(session.fim)}</div>
+        </div>
+        <span class="status-badge finalizada">● finalizada</span>
+      </div>
+      <div class="card-actions">
+        <button type="button" class="btn-download" data-download-tipo="${tipo}" data-download-id="${escapeHtml(session.id)}" data-download-label="${escapeHtml(session.label)}">Baixar CSV</button>
+      </div>
+    </div>
+  `;
+}
+
+// ---- Download de CSV (sob demanda, funciona pra sessão aberta ou já finalizada) ----
+function downloadCsv(filename, headers, rows){
+  const escapeCsv = (v) => `"${String(v == null ? '' : v).replace(/"/g, '""')}"`;
+  const lines = [headers.map(escapeCsv).join(';')];
+  rows.forEach(r => lines.push(r.map(escapeCsv).join(';')));
+  const blob = new Blob(['﻿' + lines.join('\r\n')], { type: 'text/csv;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 4000);
+}
+
+async function baixarSessao(tipo, sessionId, label){
+  const nomeArquivo = (tipo === 'contagem' ? 'contagem-' : 'lancamentos-posicao-') + label.replace(/[^0-9a-zA-Z]+/g, '-') + '.csv';
+  if(tipo === 'contagem'){
+    const data = await fetchJson('/api/results?sessionId=' + encodeURIComponent(sessionId));
+    const rows = data.results.map(r => [r.sku, r.descricao, Number(r.quantidade)]);
+    downloadCsv(nomeArquivo, ['SKU', 'Descricao', 'Quantidade_kg'], rows);
+  } else {
+    const data = await fetchJson('/api/posicao?sessionId=' + encodeURIComponent(sessionId));
+    const rows = data.lancamentos.map(l => [l.posicao, l.sku, l.descricao, Number(l.quantidade)]);
+    downloadCsv(nomeArquivo, ['Posicao', 'SKU', 'Descricao', 'Quantidade_kg'], rows);
+  }
+}
+
+document.addEventListener('click', async (e) => {
+  const btn = e.target.closest('[data-download-id]');
+  if(!btn) return;
+  const originalText = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = 'Gerando...';
+  try{
+    await baixarSessao(btn.dataset.downloadTipo, btn.dataset.downloadId, btn.dataset.downloadLabel);
+  } catch(err){
+    alert('Erro ao gerar planilha: ' + err.message);
+  }
+  btn.disabled = false;
+  btn.textContent = originalText;
+});
+
 async function refresh(){
   try{
-    const [contagemSessRes, posicaoSessRes] = await Promise.all([
+    const [contagemSessRes, posicaoSessRes, contagemFinRes, posicaoFinRes] = await Promise.all([
       fetchJson('/api/sessions?tipo=contagem'),
-      fetchJson('/api/sessions?tipo=posicao')
+      fetchJson('/api/sessions?tipo=posicao'),
+      fetchJson('/api/sessions?tipo=contagem&status=finalizada&limit=8'),
+      fetchJson('/api/sessions?tipo=posicao&status=finalizada&limit=8')
     ]);
 
     const contagemDetails = await Promise.all(contagemSessRes.sessions.map(async s => {
@@ -270,6 +359,14 @@ async function refresh(){
     const posicaoGrid = document.getElementById('posicao-grid');
     if(posicaoDetails.length === 0) renderEmptyGrid(posicaoGrid, 'Nenhuma sessão por posição aberta no momento.');
     else posicaoGrid.innerHTML = posicaoDetails.map(posicaoCard).join('');
+
+    const contagemFinGrid = document.getElementById('contagem-finalizadas-grid');
+    if(contagemFinRes.sessions.length === 0) renderEmptyGrid(contagemFinGrid, 'Nenhuma contagem finalizada ainda.');
+    else contagemFinGrid.innerHTML = contagemFinRes.sessions.map(s => finishedCard(s, 'contagem')).join('');
+
+    const posicaoFinGrid = document.getElementById('posicao-finalizadas-grid');
+    if(posicaoFinRes.sessions.length === 0) renderEmptyGrid(posicaoFinGrid, 'Nenhuma sessão por posição finalizada ainda.');
+    else posicaoFinGrid.innerHTML = posicaoFinRes.sessions.map(s => finishedCard(s, 'posicao')).join('');
 
     const totalSessoes = contagemDetails.length + posicaoDetails.length;
     const totalLancamentos = contagemDetails.reduce((acc, s) => acc + s.results.length, 0)

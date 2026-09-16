@@ -6,8 +6,13 @@ export default async function handler(req, res) {
     await ensureSchema();
     if (req.method === 'GET') {
       const tipo = req.query.tipo || 'contagem';
+      const status = req.query.status || 'aberta';
+      const limit = Math.min(Number(req.query.limit) || 100, 200);
       const { rows } = await sql`
-        SELECT id, label FROM sessoes WHERE status = 'aberta' AND tipo = ${tipo} ORDER BY inicio DESC
+        SELECT id, label, status, inicio, fim FROM sessoes
+        WHERE status = ${status} AND tipo = ${tipo}
+        ORDER BY inicio DESC
+        LIMIT ${limit}
       `;
       return res.status(200).json({ sessions: rows });
     }
