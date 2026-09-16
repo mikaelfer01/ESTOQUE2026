@@ -20,7 +20,7 @@
     --shell-dark: #16232f;
     --brand: #0a6ed1;
     --brand-dark: #085caf;
-    --bg: #f2f4f6;
+    --bg: #f5f6f7;
     --surface: #ffffff;
     --surface-raised: #eef1f4;
     --ink: #1d2d3e;
@@ -28,7 +28,7 @@
     --line: #d9dde1;
     --ok: #107e3e;
     --ok-bg: #e6f4ea;
-    --warning: #b96400;
+    --warning: #df6e0c;
     --warning-bg: #fdf1e2;
     --danger: #bb0000;
     --danger-bg: #fbe9e9;
@@ -107,7 +107,6 @@
   input[type="text"], input[type="number"], input[type="date"], select{
     width:100%; min-height:52px; padding:12px 14px; border:1px solid var(--line);
     border-radius:6px; font-size:1.05rem; background:var(--surface-raised); color:var(--ink);
-    color-scheme: dark; /* deixa o ícone/calendário do date picker visível no tema escuro */
   }
   input:focus, select:focus{ outline:2px solid var(--brand); outline-offset:-1px; }
   .field{ margin-bottom:0; }
@@ -133,7 +132,7 @@
   .search-results{ max-height:240px; overflow-y:auto; border:1px solid var(--line); border-radius:5px; background:var(--surface-raised); margin-top:10px; }
   .prod-item{ padding:11px 12px; border-bottom:1px solid var(--line); cursor:pointer; display:flex; justify-content:space-between; gap:10px; }
   .prod-item:last-child{ border-bottom:none; }
-  .prod-item:hover{ background: #233040; }
+  .prod-item:hover{ background: var(--surface); }
   .prod-sku{ font-family:'Consolas', 'Courier New', monospace; font-weight:700; font-size:0.82rem; color:var(--ok); white-space:nowrap; }
   .prod-desc{ font-size:0.88rem; color:var(--ink-soft); text-align:right; }
 
@@ -387,7 +386,7 @@ function render(){
   ` : `
     <div class="scan-row">
       <input type="text" id="posicao-input" placeholder="Ex: A-12-03" value="${escapeHtml(state.posicao)}" autocomplete="off">
-      <button type="button" class="scan-btn" id="scan-posicao-btn" title="Escanear QR da posição">📷</button>
+      <button type="button" class="scan-btn" id="scan-posicao-btn" title="Escanear QR da posição"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8V6a2 2 0 0 1 2-2h2M4 16v2a2 2 0 0 0 2 2h2M20 8V6a2 2 0 0 0-2-2h-2M20 16v2a2 2 0 0 1-2 2h-2"></path><rect x="9" y="9" width="6" height="6" rx="0.8"></rect></svg></button>
     </div>
   `;
 

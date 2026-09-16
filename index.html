@@ -20,7 +20,7 @@
     --shell-dark: #16232f;
     --brand: #0a6ed1;
     --brand-dark: #085caf;
-    --bg: #f2f4f6;
+    --bg: #f5f6f7;
     --surface: #ffffff;
     --surface-raised: #eef1f4;
     --ink: #1d2d3e;
@@ -28,7 +28,7 @@
     --line: #d9dde1;
     --ok: #107e3e;
     --ok-bg: #e6f4ea;
-    --warning: #b96400;
+    --warning: #df6e0c;
     --warning-bg: #fdf1e2;
     --danger: #bb0000;
     --danger-bg: #fbe9e9;
@@ -307,7 +307,7 @@ function renderSessions(){
   if(state.openSessions.length === 0){
     sessionsHtml = `
       <div class="empty">
-        <div class="hero-icon">📋</div>
+        <div class="hero-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="4" width="12" height="17" rx="1.5"></rect><rect x="9" y="2.5" width="6" height="3" rx="1"></rect><line x1="8.5" y1="10" x2="15.5" y2="10"></line><line x1="8.5" y1="13.5" x2="15.5" y2="13.5"></line><line x1="8.5" y1="17" x2="12.5" y2="17"></line></svg></div>
         Nenhuma contagem aberta no momento.<br>Comece uma nova abaixo.
       </div>`;
   } else {
@@ -374,7 +374,7 @@ function renderCounting(){
         <label>Buscar produto (SKU ou descrição)</label>
         <div class="scan-row">
           <input type="text" id="search-input" placeholder="Ex: 4521 ou filé de peito" value="${escapeHtml(state.search)}" autocomplete="off">
-          <button type="button" class="scan-btn" id="scan-btn" title="Escanear código de barras">📷</button>
+          <button type="button" class="scan-btn" id="scan-btn" title="Escanear código de barras"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8V6a2 2 0 0 1 2-2h2M4 16v2a2 2 0 0 0 2 2h2M20 8V6a2 2 0 0 0-2-2h-2M20 16v2a2 2 0 0 1-2 2h-2"></path><circle cx="12" cy="12" r="3.2"></circle></svg></button>
         </div>
       </div>
       <div class="search-results">
