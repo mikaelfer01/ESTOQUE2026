@@ -705,6 +705,7 @@ async function doLancar(){
     await lancarPosicao(payload);
     state.log.push(payload);
     showToast('Lançado: ' + qtyVal + ' kg — ' + state.selectedProduct.descricao);
+    state.posicao = '';
     state.selectedProduct = null;
     state.search = '';
     state.qty = '';
@@ -713,7 +714,7 @@ async function doLancar(){
   }
   state.busy = false;
   render();
-  setTimeout(() => { const s = document.getElementById('search-input'); if(s) s.focus(); }, 0);
+  setTimeout(() => { const p = document.getElementById('posicao-input'); if(p) p.focus(); }, 0);
 }
 
 // ---- Leitor de QR (câmera) para a posição ----
