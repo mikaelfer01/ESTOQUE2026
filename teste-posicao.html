@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Teste de Posição</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#1d2d3e">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Estoque WMS">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<style>
+  :root{
+    --shell: #1d2d3e;
+    --shell-dark: #16232f;
+    --brand: #0a6ed1;
+    --brand-dark: #085caf;
+    --bg: #f5f6f7;
+    --surface: #ffffff;
+    --surface-raised: #eef1f4;
+    --ink: #1d2d3e;
+    --ink-soft: #6a6d78;
+    --line: #d9dde1;
+    --ok: #107e3e;
+    --ok-bg: #e6f4ea;
+    --warning: #df6e0c;
+    --warning-bg: #fdf1e2;
+    --danger: #bb0000;
+    --danger-bg: #fbe9e9;
+  }
+  *{ box-sizing:border-box; }
+  html,body{ margin:0; padding:0; }
+  body{
+    background: var(--bg); color: var(--ink);
+    font-family: 'Segoe UI', Roboto, -apple-system, sans-serif;
+    min-height:100vh;
+  }
+
+  .shellbar{
+    background: linear-gradient(180deg, var(--shell), var(--shell-dark));
+    color:#fff; padding:0 16px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.18);
+  }
+  .shellbar-inner{
+    max-width:640px; margin:0 auto;
+    display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between;
+    gap:6px 14px; padding:12px 0;
+  }
+  .brand{ display:flex; align-items:center; gap:8px; font-weight:700; font-size:0.98rem; letter-spacing:0.01em; white-space:nowrap; }
+  .brand-icon{
+    display:inline-flex; align-items:center; justify-content:center;
+    width:22px; height:22px; border-radius:5px; background:var(--brand);
+    font-size:0.8rem; font-weight:800;
+  }
+  .brand-accent{ color:#8fc4ff; font-weight:400; }
+  .shell-nav{ display:flex; gap:4px; flex-wrap:wrap; }
+  .shell-nav a{
+    color:rgba(255,255,255,0.72); text-decoration:none; font-size:0.82rem; font-weight:600;
+    padding:6px 10px; border-radius:4px; transition: background 0.12s ease, color 0.12s ease;
+  }
+  .shell-nav a:hover{ background:rgba(255,255,255,0.08); color:#fff; }
+  .shell-nav a.active{ background:var(--brand); color:#fff; }
+
+  .wrap{ max-width: 640px; width:100%; margin: 0 auto; padding: 14px 12px 40px; }
+  h1{ font-size:1.15rem; margin: 0 0 10px; font-weight:700; letter-spacing: -0.01em; color:var(--ink); }
+  .sub{ color:var(--ink-soft); font-size:0.85rem; margin-bottom:14px; }
+
+  .panel{
+    background: var(--surface); border: 1px solid var(--line); border-radius: 6px;
+    padding: 14px; margin-bottom: 14px; box-shadow: 0 1px 3px rgba(29,45,62,0.06);
+  }
+  .f-label{
+    font-size:0.7rem; font-weight:700; text-transform:uppercase; letter-spacing:0.05em;
+    color:var(--ink-soft); margin-bottom:8px;
+  }
+
+  button{
+    font-family: inherit; cursor:pointer; border:none;
+    border-radius:5px; font-weight:600; font-size:0.9rem;
+    padding: 10px 16px; transition: background 0.12s ease, transform 0.05s ease;
+  }
+  button:active{ transform: translateY(1px); }
+  .btn-primary{ background: var(--brand); color:#fff; }
+  .btn-primary:hover{ background: var(--brand-dark); }
+  .btn-secondary{ background:var(--surface-raised); color:var(--ink); border:1px solid var(--line); }
+  .btn-secondary:hover{ background:#e2e6ea; }
+  .btn-block{ width:100%; }
+  button:disabled{ opacity:0.5; cursor:not-allowed; }
+
+  input[type="text"]{
+    width:100%; min-height:46px; padding:10px 12px; border:1px solid var(--line);
+    border-radius:6px; font-size:1rem; background:var(--surface-raised); color:var(--ink);
+  }
+  input:focus{ outline:2px solid var(--brand); outline-offset:-1px; }
+
+  .scan-row{ display:flex; gap:10px; }
+  .scan-row input{ flex:1; min-width:0; }
+  .scan-btn{
+    display:flex; align-items:center; justify-content:center;
+    background: var(--surface-raised); color:var(--brand); border:1px solid var(--brand);
+    flex-shrink:0; width:46px; font-size:1.2rem; padding:0;
+  }
+
+  .result{ border-radius:6px; padding:16px; margin-top:4px; }
+  .result.ok{ background:var(--ok-bg); border:1px solid var(--ok); }
+  .result.warn{ background:var(--warning-bg); border:1px solid var(--warning); }
+  .result .row{ display:flex; justify-content:space-between; gap:10px; padding:6px 0; border-bottom:1px dashed rgba(0,0,0,0.08); font-size:0.85rem; }
+  .result .row:last-child{ border-bottom:none; }
+  .result .row .k{ color:var(--ink-soft); font-weight:600; flex-shrink:0; }
+  .result .row .v{ font-family:'Consolas','Courier New', monospace; text-align:right; word-break:break-all; }
+  .result .codigo{ text-align:center; padding:10px 0 4px; }
+  .result .codigo .val{ font-family:'Consolas','Courier New', monospace; font-weight:800; font-size:1.4rem; }
+  .result.ok .codigo .val{ color:var(--ok); }
+  .result.warn .codigo .val{ color:var(--warning); }
+  .result .codigo .tag{ font-size:0.7rem; text-transform:uppercase; letter-spacing:0.05em; color:var(--ink-soft); margin-bottom:4px; }
+
+  .badge{ display:inline-block; padding:2px 9px; border-radius:20px; font-size:0.72rem; font-weight:700; }
+  .badge.link{ background:#e5eefc; color:var(--brand-dark); }
+  .badge.codigo_barras{ background:#f0e5fc; color:#6b21a8; }
+  .badge.codigo_direto{ background:var(--ok-bg); color:var(--ok); }
+
+  .history{ margin-top:18px; }
+  .history h3{ font-size:0.72rem; text-transform:uppercase; letter-spacing:0.05em; color:var(--ink-soft); margin-bottom:8px; font-weight:700; }
+  .history-item{ padding:10px 0; border-bottom:1px solid var(--line); font-size:0.85rem; display:flex; justify-content:space-between; gap:10px; }
+  .history-item:last-child{ border-bottom:none; }
+  .history-item .raw{ color:var(--ink-soft); font-family:'Consolas','Courier New', monospace; font-size:0.76rem; }
+  .history-item .val{ font-weight:700; font-family:'Consolas','Courier New', monospace; }
+
+  .empty{ text-align:center; color:var(--ink-soft); padding:16px 10px; font-size:0.88rem; }
+  .spinner{
+    width:16px; height:16px; border:2px solid rgba(255,255,255,0.35);
+    border-top-color:#fff; border-radius:50%; display:inline-block;
+    animation: spin 0.7s linear infinite; vertical-align:middle;
+  }
+  @keyframes spin{ to{ transform:rotate(360deg); } }
+
+  .modal-backdrop{
+    position:fixed; inset:0; background:rgba(15,25,35,0.55);
+    display:flex; align-items:center; justify-content:center; padding:20px; z-index:50;
+  }
+  .modal{ background:var(--surface); border-radius:8px; padding:22px; max-width:380px; width:100%; box-shadow:0 12px 40px rgba(0,0,0,0.25); }
+  .scanner-modal .modal{ max-width:480px; padding:0; overflow:hidden; background:#000; }
+  .scanner-video-wrap{ position:relative; width:100%; aspect-ratio: 3/4; background:#000; }
+  .scanner-video-wrap video{ width:100%; height:100%; object-fit:cover; display:block; }
+  .scanner-reticle{
+    position:absolute; left:12%; right:12%; top:32%; bottom:32%;
+    border:2px solid var(--ok); border-radius:6px; box-shadow:0 0 0 999px rgba(0,0,0,0.35);
+  }
+  .scanner-hint{
+    position:absolute; left:0; right:0; bottom:12px; text-align:center;
+    color:#fff; font-size:0.8rem; text-shadow:0 1px 3px rgba(0,0,0,0.8);
+  }
+  .scanner-footer{ padding:14px 16px; background:var(--surface); }
+  .scanner-error{ padding:20px 16px; color:#fff; font-size:0.9rem; }
+
+  .toast{
+    position:fixed; left:50%; bottom:24px; transform:translateX(-50%);
+    background:var(--shell); color:#fff; border:none;
+    padding:12px 20px; border-radius:5px;
+    font-size:0.9rem; opacity:0; pointer-events:none; transition:opacity 0.2s ease, transform 0.2s ease;
+    max-width:90vw; text-align:center; box-shadow:0 4px 14px rgba(0,0,0,0.25);
+  }
+  .toast.show{ opacity:1; transform:translateX(-50%) translateY(-6px); }
+  .toast.error{ background: var(--danger); }
+</style>
+</head>
+<body>
+<header class="shellbar">
+  <div class="shellbar-inner">
+    <div class="brand"><span class="brand-icon">E</span>Estoque<span class="brand-accent">WMS</span></div>
+    <nav class="shell-nav">
+      <a href="index.html">Contagem</a>
+      <a href="posicao.html">Posição</a>
+      <a href="resultados.html">Resultados</a>
+      <a href="auditor.html">Auditor</a>
+      <a href="teste-posicao.html" class="active">Teste</a>
+      <a href="admin.html">Admin</a>
+    </nav>
+  </div>
+</header>
+<main class="wrap">
+  <h1>Teste de leitura de posição</h1>
+  <div class="sub">Escaneie ou digite o valor do QR/código de barras pra conferir se a conciliação com o mapa de posições está batendo certo — não lança nada, só verifica.</div>
+
+  <div class="panel">
+    <div class="f-label">Valor lido</div>
+    <div class="scan-row">
+      <input type="text" id="valor-input" placeholder="Cole, digite ou escaneie" autocomplete="off">
+      <button type="button" class="scan-btn" id="scan-btn" title="Escanear"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8V6a2 2 0 0 1 2-2h2M4 16v2a2 2 0 0 0 2 2h2M20 8V6a2 2 0 0 0-2-2h-2M20 16v2a2 2 0 0 1-2 2h-2"></path><rect x="9" y="9" width="6" height="6" rx="0.8"></rect></svg></button>
+    </div>
+    <button type="button" class="btn-primary btn-block" id="verificar-btn" style="margin-top:10px;">Verificar</button>
+  </div>
+
+  <div id="result-area"></div>
+
+  <div id="history-area"></div>
+</main>
+<div class="toast" id="toast"></div>
+
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => navigator.serviceWorker.register('sw.js'));
+}
+</script>
+<script>
+let history = [];
+
+function escapeHtml(s){
+  return String(s == null ? '' : s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+}
+
+function showToast(msg, isError){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show' + (isError ? ' error' : '');
+  clearTimeout(window._toastTimer);
+  window._toastTimer = setTimeout(() => { t.className = 'toast'; }, 2600);
+}
+
+const TIPO_LABEL = {
+  link: 'Link do QR (posicao_id)',
+  codigo_barras: 'Código de barras',
+  codigo_direto: 'Código direto / digitado'
+};
+
+function renderResult(data){
+  const ok = data.mapeado;
+  const area = document.getElementById('result-area');
+  area.innerHTML = `
+    <div class="result ${ok ? 'ok' : 'warn'}">
+      <div class="codigo">
+        <div class="tag">Código conciliado</div>
+        <div class="val">${escapeHtml(data.resolvida)}</div>
+      </div>
+      <div class="row"><span class="k">Valor lido</span><span class="v">${escapeHtml(data.raw)}</span></div>
+      <div class="row"><span class="k">Tipo detectado</span><span class="v"><span class="badge ${data.tipo}">${TIPO_LABEL[data.tipo] || data.tipo}</span></span></div>
+      ${data.tipo === 'link' ? `<div class="row"><span class="k">posicao_id</span><span class="v">${data.posicaoId}</span></div>` : ''}
+      ${!ok ? `<div class="row"><span class="k">Status</span><span class="v" style="color:var(--warning); font-weight:700;">Não mapeado — cadastre no Admin</span></div>` : ''}
+    </div>
+  `;
+}
+
+function renderHistory(){
+  const area = document.getElementById('history-area');
+  if(history.length === 0){ area.innerHTML = ''; return; }
+  area.innerHTML = `
+    <div class="history">
+      <h3>Testes recentes</h3>
+      ${history.slice().reverse().map(h => `
+        <div class="history-item">
+          <div>
+            <div class="val" style="color:${h.mapeado ? 'var(--ok)' : 'var(--warning)'}">${escapeHtml(h.resolvida)}</div>
+            <div class="raw">${escapeHtml(h.raw)}</div>
+          </div>
+          <span class="badge ${h.tipo}">${TIPO_LABEL[h.tipo] || h.tipo}</span>
+        </div>
+      `).join('')}
+    </div>
+  `;
+}
+
+async function verificar(){
+  const input = document.getElementById('valor-input');
+  const valor = input.value.trim();
+  if(!valor){ showToast('Cole ou escaneie um valor primeiro.', true); return; }
+
+  const btn = document.getElementById('verificar-btn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span>Verificando...';
+  try{
+    const res = await fetch('/api/resolver-posicao?valor=' + encodeURIComponent(valor));
+    const data = await res.json();
+    if(data.error) throw new Error(data.error);
+    renderResult(data);
+    history.push(data);
+    renderHistory();
+  } catch(err){
+    showToast('Erro: ' + err.message, true);
+  }
+  btn.disabled = false;
+  btn.textContent = 'Verificar';
+}
+
+document.getElementById('verificar-btn').addEventListener('click', verificar);
+document.getElementById('valor-input').addEventListener('keydown', (e) => { if(e.key === 'Enter') verificar(); });
+
+document.getElementById('scan-btn').addEventListener('click', () => {
+  openScanner(['qr_code', 'code_128', 'code_39', 'ean_13', 'ean_8', 'upc_a', 'upc_e', 'itf', 'codabar'], (value) => {
+    document.getElementById('valor-input').value = value;
+    verificar();
+  });
+});
+
+// ---- Leitor de código (QR/barras) pela câmera ----
+async function openScanner(formats, onDetected){
+  const backdrop = document.createElement('div');
+  backdrop.className = 'modal-backdrop scanner-modal';
+  backdrop.innerHTML = `<div class="modal"><div id="scanner-body"></div></div>`;
+  document.body.appendChild(backdrop);
+  const body = backdrop.querySelector('#scanner-body');
+
+  let stopped = false;
+  function close(stream){
+    stopped = true;
+    if(stream) stream.getTracks().forEach(t => t.stop());
+    backdrop.remove();
+  }
+  backdrop.addEventListener('click', (e) => { if(e.target === backdrop) close(); });
+
+  if(!('BarcodeDetector' in window)){
+    body.innerHTML = `
+      <div class="scanner-error">Leitor não suportado neste navegador. Digite manualmente.</div>
+      <div class="scanner-footer"><button class="btn-secondary btn-block" id="scanner-close">Fechar</button></div>
+    `;
+    body.querySelector('#scanner-close').addEventListener('click', () => close());
+    return;
+  }
+
+  let stream;
+  try{
+    stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+  } catch(err){
+    body.innerHTML = `
+      <div class="scanner-error">Sem acesso à câmera: ${escapeHtml(err.message)}</div>
+      <div class="scanner-footer"><button class="btn-secondary btn-block" id="scanner-close">Fechar</button></div>
+    `;
+    body.querySelector('#scanner-close').addEventListener('click', () => close());
+    return;
+  }
+
+  body.innerHTML = `
+    <div class="scanner-video-wrap">
+      <video id="scanner-video" autoplay playsinline muted></video>
+      <div class="scanner-reticle"></div>
+      <div class="scanner-hint">Aponte a câmera para o código</div>
+    </div>
+    <div class="scanner-footer"><button class="btn-secondary btn-block" id="scanner-close">Cancelar</button></div>
+  `;
+  const video = body.querySelector('#scanner-video');
+  video.srcObject = stream;
+  body.querySelector('#scanner-close').addEventListener('click', () => close(stream));
+
+  const detector = new BarcodeDetector({ formats });
+
+  async function loop(){
+    if(stopped) return;
+    try{
+      const codes = await detector.detect(video);
+      if(codes.length > 0){
+        const value = codes[0].rawValue;
+        close(stream);
+        onDetected(value);
+        return;
+      }
+    } catch(err){ /* frame sem código — ignora e tenta o próximo */ }
+    requestAnimationFrame(loop);
+  }
+  requestAnimationFrame(loop);
+}
+</script>
+</body>
+</html>

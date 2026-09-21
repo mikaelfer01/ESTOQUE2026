@@ -1,26 +1,4 @@
-import { sql, ensureSchema } from '../lib/db.js';
-
-/**
- * Concilia o valor bruto lido no QR com o código fantasia da posição
- * (ver regra-interpretacao-posicoes-wms):
- * - link do sistema (".../posicao-info.html?posicao_id=130") -> resolve
- *   pelo mapa_posicoes (posicao_id não segue fórmula, exige tabela);
- * - código de barras ("POS-{local_estoque_id}-{codigo}") -> o código já
- *   vem embutido, extrai direto sem precisar de mapa;
- * - qualquer outra coisa (já é o código fantasia, ou foi digitado à mão)
- *   -> usa como veio.
- */
-function resolvePosicaoCodigo(raw, mapaById) {
-  if (!raw) return raw;
-  const linkMatch = String(raw).match(/posicao_id=(\d+)/i);
-  if (linkMatch) {
-    const id = Number(linkMatch[1]);
-    return mapaById.has(id) ? mapaById.get(id) : `ID ${id} (não mapeado)`;
-  }
-  const barcodeMatch = String(raw).match(/^POS-\d+-(P-.+)$/i);
-  if (barcodeMatch) return barcodeMatch[1];
-  return raw;
-}
+import { sql, ensureSchema, resolvePosicaoCodigo, getMapaPosicoesById } from '../lib/db.js';
 
 export default async function handler(req, res) {
   try {
@@ -49,8 +27,7 @@ export default async function handler(req, res) {
 
       const { rows } = await sql.query(text, params);
 
-      const mapaRes = await sql`SELECT posicao_id, codigo FROM mapa_posicoes`;
-      const mapaById = new Map(mapaRes.rows.map((m) => [m.posicao_id, m.codigo]));
+      const mapaById = await getMapaPosicoesById();
       const lancamentos = rows.map((r) => ({
         ...r,
         posicao_resolvida: resolvePosicaoCodigo(r.posicao, mapaById)
