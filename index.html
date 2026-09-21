@@ -768,7 +768,7 @@ async function openScanner(){
   body.querySelector('#scanner-close').addEventListener('click', () => close(stream));
 
   const detector = new BarcodeDetector({
-    formats: ['ean_13', 'ean_8', 'upc_a', 'upc_e', 'code_128', 'code_39', 'itf', 'codabar']
+    formats: ['qr_code', 'ean_13', 'ean_8', 'upc_a', 'upc_e', 'code_128', 'code_39', 'itf', 'codabar']
   });
 
   async function loop(){
