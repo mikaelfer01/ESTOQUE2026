@@ -264,12 +264,12 @@ function currentPositionBanner(session){
 function posicaoCard(session){
   const rows = session.lancamentos || [];
   const totalQtd = rows.reduce((acc, r) => acc + Number(r.quantidade || 0), 0);
-  const posicoes = new Set(rows.map(r => r.posicao)).size;
+  const posicoes = new Set(rows.map(r => r.posicao_resolvida || r.posicao)).size;
   const feed = rows.slice(0, 12).map(r => `
     <div class="feed-item">
       <div>
         <div class="desc">${escapeHtml(r.descricao || r.sku)}<span class="sku">${escapeHtml(r.sku)}</span></div>
-        <div class="meta">Posição ${escapeHtml(r.posicao || '—')} · ${fmtTime(r.criado_em)}</div>
+        <div class="meta">Posição ${escapeHtml(r.posicao_resolvida || r.posicao || '—')} · ${fmtTime(r.criado_em)}</div>
       </div>
       <div class="qty">${Number(r.quantidade).toLocaleString('pt-BR', {maximumFractionDigits:2})} kg</div>
     </div>
@@ -339,7 +339,7 @@ async function baixarSessao(tipo, sessionId, label){
     downloadCsv(nomeArquivo, ['SKU', 'Descricao', 'Quantidade_kg'], rows);
   } else {
     const data = await fetchJson('/api/posicao?sessionId=' + encodeURIComponent(sessionId));
-    const rows = data.lancamentos.map(l => [l.posicao, l.sku, l.descricao, Number(l.quantidade)]);
+    const rows = data.lancamentos.map(l => [l.posicao_resolvida || l.posicao, l.sku, l.descricao, Number(l.quantidade)]);
     downloadCsv(nomeArquivo, ['Posicao', 'SKU', 'Descricao', 'Quantidade_kg'], rows);
   }
 }

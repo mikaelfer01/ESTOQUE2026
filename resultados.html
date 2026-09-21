@@ -426,7 +426,7 @@ function buildPosicaoQuery(){
 
 function renderPosicaoSummary(rows){
   const totalQtd = rows.reduce((acc, r) => acc + Number(r.quantidade || 0), 0);
-  const posicoes = new Set(rows.map(r => r.posicao));
+  const posicoes = new Set(rows.map(r => r.posicao_resolvida || r.posicao));
   const skus = new Set(rows.map(r => r.sku));
   document.getElementById('p-summary').innerHTML = `
     <div class="stat"><div class="num">${rows.length}</div><div class="lbl">Lançamentos</div></div>
@@ -444,7 +444,7 @@ function renderPosicaoTable(rows){
   }
   tbody.innerHTML = rows.map(r => `
     <tr>
-      <td class="mono" data-label="Posição">${escapeHtml(r.posicao || '—')}</td>
+      <td class="mono" data-label="Posição">${escapeHtml(r.posicao_resolvida || r.posicao || '—')}</td>
       <td class="mono" data-label="SKU">${escapeHtml(r.sku)}</td>
       <td data-label="Descrição">${escapeHtml(r.descricao)}</td>
       <td data-label="Lote">${escapeHtml(r.lote || '—')}</td>
@@ -477,7 +477,7 @@ function exportPosicaoCsv(){
   const lines = [header.join(';')];
   lastPosicaoResults.forEach(r => {
     lines.push([
-      r.posicao, r.sku, (r.descricao || '').replace(/;/g, ','), r.lote || '',
+      r.posicao_resolvida || r.posicao, r.sku, (r.descricao || '').replace(/;/g, ','), r.lote || '',
       r.fabricacao || '', r.validade || '',
       String(r.quantidade).replace('.', ','), fmtDate(r.criado_em)
     ].map(v => `"${String(v).replace(/"/g,'""')}"`).join(';'));

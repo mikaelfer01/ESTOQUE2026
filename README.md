@@ -10,7 +10,8 @@ App simples para contagem física de estoque por posição. Backend 100% na Verc
 ├── admin.html          → carrega a lista de produtos (SKU + descrição) no banco
 ├── resultados.html      → visualiza os lançamentos, com filtros por data/sessão/produto (abas: por sessão / por posição)
 ├── data/
-│   └── produtos.json   → sua lista de produtos (SKU + descrição)
+│   ├── produtos.json   → sua lista de produtos (SKU + descrição)
+│   └── mapa_posicoes.json → mapa posicao_id (do link do QR) -> código fantasia da posição
 ├── manifest.json         → deixa o site instalável como app (PWA) no celular
 ├── sw.js                 → service worker (cache do "app shell", nunca das chamadas /api)
 ├── icons/                → ícones do app instalado (192px, 512px, maskable)
@@ -22,7 +23,8 @@ App simples para contagem física de estoque por posição. Backend 100% na Verc
     ├── sessions/[id]/finish.js → POST finaliza uma sessão
     ├── counts.js          → POST lança uma quantidade contada
     ├── results.js         → GET resultados com filtros (data, sessão, status, busca)
-    └── posicao.js         → GET/POST lançamentos por posição (posição, produto, lote, fabricação/validade, quantidade)
+    ├── posicao.js         → GET/POST lançamentos por posição (concilia posicao_id -> código ao listar)
+    └── mapa-posicoes.js    → GET/POST mapa posicao_id -> código fantasia
 ```
 
 ## Como os dados ficam organizados
@@ -34,15 +36,27 @@ App simples para contagem física de estoque por posição. Backend 100% na Verc
 
 ## Aba "Posição" (`posicao.html`)
 
-Fluxo pensado para coletor de dados, na ordem pedida:
+Igual à Contagem, começa entrando numa sessão aberta por outro colega ou iniciando uma nova. Dentro da sessão:
 
 1. **Posição** — escaneie o QR code fixado na posição (câmera + `BarcodeDetector`, formato `qr_code`) ou digite manualmente.
 2. **Produto** — busca ampla por código (SKU) ou nome, tolerante a acento/ordem das palavras (mesma busca do app de contagem).
-3. **Lote**.
-4. **Fabricação e validade** — dois campos de data.
-5. **Quantidade** (kg).
+3. **Quantidade** (kg).
 
-Cada "Lançar" grava uma linha em `lancamentos_posicao` via `POST /api/posicao` e mantém a posição ativa na tela para lançar o próximo produto sem escanear de novo. O histórico fica visível na aba **Resultados**, em "Lançamentos por posição".
+Cada "Lançar" grava uma linha em `lancamentos_posicao` via `POST /api/posicao`, e o campo Posição esvazia sozinho pra escanear a próxima. Ao finalizar a sessão, baixa automaticamente o CSV com tudo que foi lançado por todo mundo. O histórico fica visível na aba **Resultados**, em "Lançamentos por posição".
+
+### Conciliação do link do QR com o código da posição
+
+O QR físico colado na posição pode trazer um link do tipo `.../posicao-info.html?posicao_id=130` (um ID sequencial interno, sem relação matemática com corredor/estante/nível) em vez do código fantasia (`P-1-PA-A-02-02`). Como não temos acesso à API autenticada que traduziria isso na origem, mantemos nosso próprio mapa `posicao_id -> código`:
+
+1. Exporte do sistema de origem a lista de posições (id + código fantasia) e coloque em `data/mapa_posicoes.json`, no formato:
+   ```json
+   [
+     { "posicao_id": 130, "codigo": "P-1-PA-A-02-02" },
+     { "posicao_id": 131, "codigo": "P-1-PA-A-02-03" }
+   ]
+   ```
+2. No Admin, clique em **Carregar mapa de posições** para gravar essa lista no banco.
+3. `GET /api/posicao` já devolve cada lançamento com um campo `posicao_resolvida` — a Resultados e todos os downloads de planilha (Contagem/Posição/Auditor) mostram esse valor conciliado. Um código de barras (`POS-{id}-{código}`) já traz o código embutido e é decodificado direto, sem precisar do mapa. Um `posicao_id` sem entrada no mapa aparece como `ID 130 (não mapeado)` em vez de um link — basta atualizar o mapa e baixar a planilha de novo pra corrigir, mesmo em lançamentos antigos.
 
 ## Passo a passo — configurar o banco (Vercel Postgres)
 

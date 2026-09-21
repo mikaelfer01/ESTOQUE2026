@@ -425,7 +425,7 @@ async function baixarPlanilhaSessao(sessionId, label){
   const res = await fetch(`/api/posicao?sessionId=${encodeURIComponent(sessionId)}`);
   const data = await res.json();
   if(data.error) throw new Error(data.error);
-  const rows = data.lancamentos.map(l => [l.posicao, l.sku, l.descricao, Number(l.quantidade)]);
+  const rows = data.lancamentos.map(l => [l.posicao_resolvida || l.posicao, l.sku, l.descricao, Number(l.quantidade)]);
   const nomeArquivo = 'lancamentos-posicao-' + label.replace(/[^0-9a-zA-Z]+/g, '-') + '.csv';
   downloadCsv(nomeArquivo, ['Posicao', 'SKU', 'Descricao', 'Quantidade_kg'], rows);
 }

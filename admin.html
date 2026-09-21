@@ -125,6 +125,13 @@
     <button id="btn" disabled>Carregar produtos</button>
     <div class="status" id="status"></div>
   </div>
+  <div class="panel" style="margin-top:14px;">
+    <div class="count" id="mapa-count">carregando...</div>
+    <div class="sub" style="margin-top:-6px; margin-bottom:12px;">Conciliação do posicao_id do link do QR com o código fantasia da posição (ver data/mapa_posicoes.json).</div>
+    <button id="mapa-btn" disabled>Carregar mapa de posições</button>
+    <div class="status" id="mapa-status"></div>
+  </div>
+
   <div class="danger-zone">
     <h2>Apagar histórico de contagens</h2>
     <div class="sub">Não afeta a lista de produtos. Irreversível.</div>
@@ -194,6 +201,53 @@ document.getElementById('btn').addEventListener('click', async () => {
 });
 
 init();
+
+// ---- Mapa de posições (concilia posicao_id do link com o código fantasia) ----
+let MAPA_POSICOES = [];
+
+async function initMapa() {
+  try {
+    const res = await fetch('data/mapa_posicoes.json');
+    MAPA_POSICOES = await res.json();
+    const btn = document.getElementById('mapa-btn');
+    document.getElementById('mapa-count').textContent = MAPA_POSICOES.length + ' posições no arquivo';
+    if (MAPA_POSICOES.length > 0) {
+      btn.disabled = false;
+      btn.textContent = 'Carregar ' + MAPA_POSICOES.length + ' posições';
+    } else {
+      btn.textContent = 'Nenhuma posição no arquivo';
+    }
+  } catch (err) {
+    document.getElementById('mapa-count').textContent = 'Erro: ' + err.message;
+  }
+}
+
+document.getElementById('mapa-btn').addEventListener('click', async () => {
+  const btn = document.getElementById('mapa-btn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span>Carregando...';
+  const statusEl = document.getElementById('mapa-status');
+  statusEl.className = 'status';
+  try {
+    const res = await fetch('/api/mapa-posicoes', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ mapa: MAPA_POSICOES })
+    });
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+    statusEl.className = 'status ok';
+    statusEl.textContent = data.count + ' posições gravadas.';
+    btn.textContent = 'Carregado com sucesso';
+  } catch (err) {
+    statusEl.className = 'status err';
+    statusEl.textContent = 'Erro: ' + err.message;
+    btn.disabled = false;
+    btn.textContent = 'Tentar novamente';
+  }
+});
+
+initMapa();
 
 // ---- Zona de risco: apagar histórico de contagens ----
 const resetModalBackdrop = document.getElementById('reset-modal-backdrop');
