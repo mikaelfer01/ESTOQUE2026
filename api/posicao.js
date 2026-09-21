@@ -37,8 +37,7 @@ export default async function handler(req, res) {
     }
 
     if (req.method === 'POST') {
-      const { sessionId, posicao, sku, descricao, lote, fabricacao, validade, quantidade } = req.body || {};
-      const qtdNum = Number(quantidade);
+      const { sessionId, posicao, sku, descricao, lote, fabricacao, validade, quantidade, vazia } = req.body || {};
 
       if (!sessionId) {
         return res.status(400).json({ error: 'Sessão inválida.' });
@@ -46,11 +45,22 @@ export default async function handler(req, res) {
       if (!posicao || !String(posicao).trim()) {
         return res.status(400).json({ error: 'Informe a posição.' });
       }
-      if (!sku || !descricao) {
-        return res.status(400).json({ error: 'Selecione um produto.' });
-      }
-      if (!(qtdNum > 0)) {
-        return res.status(400).json({ error: 'Informe uma quantidade válida.' });
+
+      let skuVal, descricaoVal, qtdNum;
+      if (vazia) {
+        skuVal = 'VAZIO';
+        descricaoVal = 'Posição vazia';
+        qtdNum = 0;
+      } else {
+        skuVal = sku;
+        descricaoVal = descricao;
+        qtdNum = Number(quantidade);
+        if (!skuVal || !descricaoVal) {
+          return res.status(400).json({ error: 'Selecione um produto.' });
+        }
+        if (!(qtdNum > 0)) {
+          return res.status(400).json({ error: 'Informe uma quantidade válida.' });
+        }
       }
 
       const sess = await sql`SELECT status FROM sessoes WHERE id = ${sessionId}`;
@@ -65,7 +75,7 @@ export default async function handler(req, res) {
 
       const { rows } = await sql`
         INSERT INTO lancamentos_posicao (session_id, posicao, sku, descricao, lote, fabricacao, validade, quantidade)
-        VALUES (${sessionId}, ${String(posicao).trim()}, ${sku}, ${descricao}, ${loteVal}, ${fabricacao || null}, ${validade || null}, ${qtdNum})
+        VALUES (${sessionId}, ${String(posicao).trim()}, ${skuVal}, ${descricaoVal}, ${loteVal}, ${fabricacao || null}, ${validade || null}, ${qtdNum})
         RETURNING id, criado_em
       `;
       return res.status(200).json({ ok: true, id: rows[0].id, criado_em: rows[0].criado_em });

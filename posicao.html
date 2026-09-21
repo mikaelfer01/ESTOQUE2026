@@ -633,6 +633,9 @@ function renderLaunching(){
     <button class="btn-primary btn-block" id="lancar-btn" ${state.busy ? 'disabled' : ''}>
       ${state.busy ? '<span class="spinner"></span>' : 'Lançar'}
     </button>
+    <button class="btn-secondary btn-block" id="vazia-btn" style="margin-top:8px;" ${state.busy ? 'disabled' : ''}>
+      Marcar posição como vazia
+    </button>
     ${logBlock}
     ${modal}
   `;
@@ -697,6 +700,9 @@ function attachLaunchingEvents(){
   const lancarBtn = document.getElementById('lancar-btn');
   if(lancarBtn) lancarBtn.addEventListener('click', doLancar);
 
+  const vaziaBtn = document.getElementById('vazia-btn');
+  if(vaziaBtn) vaziaBtn.addEventListener('click', doLancarVazia);
+
   const finishBtn = document.getElementById('finish-session-btn');
   if(finishBtn) finishBtn.addEventListener('click', () => { state.confirmFinish = true; render(); });
 
@@ -751,6 +757,31 @@ async function doLancar(){
     state.qty = '';
   } catch(err){
     showToast('Erro ao lançar: ' + err.message, true);
+  }
+  state.busy = false;
+  render();
+  setTimeout(() => { const p = document.getElementById('posicao-input'); if(p) p.focus(); }, 0);
+}
+
+async function doLancarVazia(){
+  if(!state.posicao.trim()){ showToast('Escaneie ou digite a posição.', true); return; }
+
+  state.busy = true; render();
+  try{
+    const payload = {
+      sessionId: state.session.id,
+      posicao: state.posicao.trim(),
+      vazia: true
+    };
+    await lancarPosicao(payload);
+    state.log.push({ ...payload, sku: 'VAZIO', descricao: 'Posição vazia', quantidade: 0 });
+    showToast('Posição marcada como vazia.');
+    state.posicao = '';
+    state.selectedProduct = null;
+    state.search = '';
+    state.qty = '';
+  } catch(err){
+    showToast('Erro ao marcar posição: ' + err.message, true);
   }
   state.busy = false;
   render();
