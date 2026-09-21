@@ -395,6 +395,20 @@ function updateCurrentPosition(posicao){
   }).catch(() => {});
 }
 
+// Converte o link do QR (posicao_id=NNN) ou o código de barras pro código
+// fantasia usando o mesmo mapa do servidor, pra já exibir o nome certo
+// na tela em vez do link cru.
+async function resolverPosicao(valor){
+  try{
+    const res = await fetch('/api/resolver-posicao?valor=' + encodeURIComponent(valor));
+    const data = await res.json();
+    if(data.error) return { resolvida: valor, mapeado: true };
+    return data;
+  } catch(err){
+    return { resolvida: valor, mapeado: true };
+  }
+}
+
 async function lancarPosicao(payload){
   const res = await fetch('/api/posicao', {
     method: 'POST',
@@ -628,18 +642,25 @@ function attachLaunchingEvents(){
   const posicaoInput = document.getElementById('posicao-input');
   if(posicaoInput){
     posicaoInput.addEventListener('input', (e) => { state.posicao = e.target.value; });
-    posicaoInput.addEventListener('keydown', (e) => {
+    posicaoInput.addEventListener('keydown', async (e) => {
       if(e.key === 'Enter'){
-        state.posicao = e.target.value.trim();
-        if(state.posicao) updateCurrentPosition(state.posicao);
+        const raw = e.target.value.trim();
+        if(!raw){ render(); return; }
+        const { resolvida, mapeado } = await resolverPosicao(raw);
+        state.posicao = resolvida;
+        updateCurrentPosition(state.posicao);
+        if(mapeado === false) showToast('Posição não mapeada — cadastre no Admin.', true);
         render();
       }
     });
   }
   const scanPosBtn = document.getElementById('scan-posicao-btn');
-  if(scanPosBtn) scanPosBtn.addEventListener('click', () => openScanner(['qr_code'], (value) => {
-    state.posicao = value.trim();
+  if(scanPosBtn) scanPosBtn.addEventListener('click', () => openScanner(['qr_code'], async (value) => {
+    const raw = value.trim();
+    const { resolvida, mapeado } = await resolverPosicao(raw);
+    state.posicao = resolvida;
     updateCurrentPosition(state.posicao);
+    if(mapeado === false) showToast('Posição não mapeada — cadastre no Admin.', true);
     render();
   }));
   const clearPosicao = document.getElementById('clear-posicao');
